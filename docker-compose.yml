@@ -1,0 +1,17 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python src/manage.py runserver 0.0.0.0:8000
+    container_name: tochka-app
+    image: ${IMAGE_APP}
+    ports:
+      - "127.0.0.1:8000:${APP_PORT}"
+    volumes:
+      - .:/app
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings
+    env_file:
+      - .env
+    restart: unless-stopped
