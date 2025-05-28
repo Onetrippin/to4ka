@@ -1,5 +1,6 @@
 DOCKER_COMPOSE = docker compose
 SERVICE = app
+WORKDIR = --workdir /src
 
 CONTAINER_RUNNING_EXISTS = $(if $(shell docker ps -q --filter "name=$(SERVICE)"),true,false)
 
@@ -13,7 +14,7 @@ migrate:
 	$(DOCKER_COMPOSE) run --rm $(SERVICE) python3 src/manage.py migrate $(if $m, api $m,)
 
 makemigrations:
-	$(DOCKER_COMPOSE) run --rm $(SERVICE) python3 src/manage.py makemigrations
+	$(DOCKER_COMPOSE) run --rm $(WORKDIR) $(SERVICE) python3 src/manage.py makemigrations
 
 createsuperuser:
 	$(DOCKER_COMPOSE) exec $(SERVICE) python3 src/manage.py createsuperuser
@@ -34,9 +35,9 @@ piplock:
 	$(EXEC) pipenv install
 
 lint:
-	$(EXEC) isort .
-	$(EXEC) flake8 --config setup.cfg
-	$(EXEC) black --config pyproject.toml .
+	$(DOCKER_COMPOSE) run --rm $(WORKDIR) $(SERVICE) isort .
+	$(DOCKER_COMPOSE) run --rm $(WORKDIR) $(SERVICE) flake8 --config setup.cfg
+	$(DOCKER_COMPOSE) run --rm $(WORKDIR) $(SERVICE) black --config pyproject.toml .
 
 check_lint:
 	$(EXEC) isort --check --diff .
