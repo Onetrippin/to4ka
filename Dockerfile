@@ -2,6 +2,8 @@ FROM python:3.13.2-slim
 
 RUN apt-get update && apt-get install -y \
     libpq-dev \
+    python3-dev \
+    build-essential \
     && pip install --no-cache-dir pipenv
 
 WORKDIR /app
