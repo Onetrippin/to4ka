@@ -2,7 +2,7 @@ DOCKER_COMPOSE = docker compose
 SERVICE = app
 WORKDIR = --workdir /src
 
-CONTAINER_RUNNING_EXISTS = $(if $(shell docker ps -q --filter "name=$(SERVICE)"),true,false)
+CONTAINER_RUNNING_EXISTS = $(if $(shell docker ps -q --filter "name=tochka-$(SERVICE)"),true,false)
 
 ifeq ($(CONTAINER_RUNNING_EXISTS),true)
 	EXEC = $(DOCKER_COMPOSE) exec -T $(SERVICE)
