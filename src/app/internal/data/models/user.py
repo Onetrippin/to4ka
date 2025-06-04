@@ -10,7 +10,7 @@ class User(AbstractUser):
     password = models.CharField(max_length=128)
     is_staff = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
-    tools = models.ManyToManyField(Tool, through='UserTools', related_name='users')
+    tools = models.ManyToManyField(Tool, through='UserTool', related_name='users')
 
     objects = models.Manager()
 
