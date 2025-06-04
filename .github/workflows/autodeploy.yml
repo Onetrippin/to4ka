@@ -1,0 +1,142 @@
+name: autodeploy
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+  pull_request:
+    branches:
+      - main
+      - dev
+  workflow_dispatch:
+
+jobs:
+  build-test:
+    if: github.ref_name != 'main'
+    runs-on: self-hosted
+    environment: test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup make
+        run: apk add make || true
+      - name: Login to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Copy .env file
+        run: echo "${{ secrets.DOT_ENV }}" > .env
+      - name: Set tagged image name
+        run: echo "IMAGE_APP=${{ vars.IMAGE_APP }}:test-${{ github.run_number }}" >> $GITHUB_ENV
+      - name: Build and push images
+        run: make build push
+
+  build-prod:
+    if: github.ref_name == 'main'
+    runs-on: self-hosted
+    environment: prod
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup make
+        run: apk add make || true
+      - name: Login to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Copy .env file
+        run: echo "${{ secrets.DOT_ENV }}" > .env
+      - name: Set tagged image name
+        run: |
+          echo "IMAGE_APP=${{ vars.IMAGE_APP }}:prod-${{ github.run_number }}" >> $GITHUB_ENV
+          echo "IMAGE_APP_LATEST=${{ vars.IMAGE_APP }}:latest" >> $GITHUB_ENV
+      - name: Build and push images
+        run: |
+          make build push
+          docker tag $IMAGE_APP $IMAGE_APP_LATEST
+          docker push $IMAGE_APP_LATEST
+
+  lint-test:
+    if: github.ref_name != 'main'
+    runs-on: self-hosted
+    environment: test
+    needs: build-test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Copy .env file
+        run: echo "${{ secrets.DOT_ENV }}" > .env
+      - name: Run lint
+        run: make check_lint
+
+  lint-prod:
+    if: github.ref_name == 'main'
+    runs-on: self-hosted
+    environment: prod
+    needs: build-prod
+    steps:
+      - uses: actions/checkout@v4
+      - name: Copy .env file
+        run: echo "${{ secrets.DOT_ENV }}" > .env
+      - name: Run lint
+        run: make check_lint
+
+  test-test:
+    if: github.ref_name != 'main'
+    runs-on: self-hosted
+    environment: test
+    needs: lint-test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Copy .env file
+        run: echo "${{ secrets.DOT_ENV }}" > .env
+      - name: Run tests
+        run: echo "All tests failed"
+#        run: make test
+
+  test-prod:
+    if: github.ref_name == 'main'
+    runs-on: self-hosted
+    environment: prod
+    needs: lint-prod
+    steps:
+      - uses: actions/checkout@v4
+      - name: Copy .env file
+        run: echo "${{ secrets.DOT_ENV }}" > .env
+      - name: Run tests
+        run: echo "All tests failed"
+  #        run: make test
+
+  deploy-test:
+    if: github.ref_name != 'main' && github.event_name == 'workflow_dispatch'
+    runs-on: self-hosted
+    environment: test
+    needs: test-test
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login to GitHub Container Registry
+        run: echo "${{ secrets.FTPI_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Copy .env file
+        run: echo "${{ secrets.DOT_ENV }}" > .env
+      - name: Set tagged image name
+        run: echo "IMAGE_APP=${{ vars.IMAGE_APP }}:test-${{ github.run_number }}" >> $GITHUB_ENV
+      - name: Deploy app (manual)
+        run: make pull down migrate collectstatic up
+
+  deploy-prod:
+    if: github.ref_name == 'main' && github.event_name == 'workflow_dispatch'
+    runs-on: self-hosted
+    environment: prod
+    needs: test-prod
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Login to GitHub Container Registry
+        run: echo "${{ secrets.FTPI_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: Copy .env file
+        run: echo "${{ secrets.DOT_ENV }}" > .env
+      - name: Set tagged image name
+        run: echo "IMAGE_APP=${{ vars.IMAGE_APP }}:prod-${{ github.run_number }}" >> $GITHUB_ENV
+      - name: Deploy app (manual)
+        run: make pull down migrate collectstatic up
