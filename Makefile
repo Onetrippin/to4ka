@@ -54,13 +54,12 @@ pull:
 	docker pull ${IMAGE_APP}
 
 up:
-	$(DOCKER_COMPOSE) up --build -d
+	$(DOCKER_COMPOSE) up -d
 
 down:
 	$(DOCKER_COMPOSE) down
 
 rebuild:
-	$(DOCKER_COMPOSE) down
 	$(DOCKER_COMPOSE) up --build -d
 
 clean:
