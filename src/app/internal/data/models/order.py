@@ -27,6 +27,7 @@ class Order(models.Model):
     status = models.CharField(max_length=32, choices=ORDER_STATUS_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True)
     closed_at = models.DateTimeField(null=True, blank=True)
+    filled = models.IntegerField(null=True, blank=True)
 
     objects = models.Manager()
 
