@@ -29,6 +29,7 @@ class Order(models.Model):
     filled = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     closed_at = models.DateTimeField(null=True, blank=True)
+    filled = models.IntegerField(null=True, blank=True)
 
     objects = models.Manager()
 
