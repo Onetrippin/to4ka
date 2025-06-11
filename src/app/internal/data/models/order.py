@@ -7,16 +7,15 @@ from app.internal.data.models.user import User
 
 
 class Order(models.Model):
-    ORDER_DIR_CHOICES = [('buy', 'Покупка'), ('sell', 'Продажа')]
+    ORDER_DIR_CHOICES = [('BUY', 'Покупка'), ('SELL', 'Продажа')]
 
     ORDER_TYPE_CHOICES = [('market', 'Рыночная'), ('limit', 'Лимитная')]
 
     ORDER_STATUS_CHOICES = [
-        ('open', 'Открыта'),
-        ('partially_filled', 'Частично исполнена'),
-        ('filled', 'Исполнена'),
-        ('cancelled', 'Отменена'),
-        ('rejected', 'Отклонена'),
+        ('NEW', 'Новая'),
+        ('EXECUTED', 'Выполнена'),
+        ('PARTIALLY_EXECUTED', 'Частично исполнена'),
+        ('CANCELLED', 'Отменена'),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
