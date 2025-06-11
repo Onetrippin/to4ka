@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List
 
+from app.internal.common.response_entities import SuccessResponse
+
 
 class IOrderRepository(ABC):
     @abstractmethod
@@ -16,5 +18,5 @@ class IOrderRepository(ABC):
         ...
 
     @abstractmethod
-    def cancel_order(self):
+    def cancel_order(self, user_id: int, order_id: str) -> None:
         ...
