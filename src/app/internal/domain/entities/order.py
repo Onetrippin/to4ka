@@ -1,26 +1,34 @@
 from datetime import datetime
-from typing import Optional, Union
+from uuid import UUID
 
 from ninja import Schema
 
 
-class LimitOrderListBody(Schema):
-    direction: str
-    ticker: str
-    qty: int
-    price: float
-
-
-class MarketOrderListBody(Schema):
+class BaseOrderListBody(Schema):
     direction: str
     ticker: str
     qty: int
 
 
-class OrderListOut(Schema):
-    id: str
+class MarketOrderListBody(BaseOrderListBody):
+    ...
+
+
+class LimitOrderListBody(BaseOrderListBody):
+    price: int
+
+
+class BaseOrderListOut(Schema):
+    id: UUID
     status: str
-    user_id: str
+    user_id: UUID
     timestamp: datetime
-    body: Union[LimitOrderListBody, MarketOrderListBody]
-    filled: Optional[int] = None
+
+
+class MarketOrderListOut(BaseOrderListOut):
+    body: MarketOrderListBody
+
+
+class LimitOrderListOut(BaseOrderListOut):
+    body: LimitOrderListBody
+    filled: int

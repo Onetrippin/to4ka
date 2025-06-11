@@ -6,17 +6,41 @@ from app.internal.domain.interfaces.order import IOrderRepository
 
 class OrderRepository(IOrderRepository):
     def get_order_list(self, user_id: int) -> List[Dict[str, Any]]:
-        orders = Order.objects.filter(user_id_id=user_id).values(
-            'id',
-            'status',
-            'user_id_id',
-            'created_at',
-            'side',
-            'tool_id__ticker',
-            'tool_quantity',
-            'price',
-            'filled',
-            'type',
+        return list(
+            Order.objects.filter(user_id=user_id).values(
+                'id',
+                'status',
+                'user_id',
+                'created_at',
+                'direction',
+                'tool__ticker',
+                'quantity',
+                'price',
+                'filled',
+                'type',
+            )
         )
 
-        return list(orders)
+    def create_order(self):
+        ...
+
+    def get_order(self, user_id: int, order_id: str) -> Dict[str, Any]:
+        return (
+            Order.objects.filter(id=order_id)
+            .values(
+                'id',
+                'status',
+                'user_id',
+                'created_at',
+                'direction',
+                'tool__ticker',
+                'quantity',
+                'price',
+                'filled',
+                'type',
+            )
+            .first()
+        )
+
+    def cancel_order(self):
+        ...

@@ -29,5 +29,5 @@ class ApiKeyAuth(HttpBearer):
         user_data = user_repo.get_user_by_token_hash(token_hash)
         if not user_data:
             raise HttpError(401, 'Invalid API key')
-        request.state.user_id, request.state.user_role = user_data
+        request.user_id, request.user_role = user_data
         return token
