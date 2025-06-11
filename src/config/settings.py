@@ -28,6 +28,10 @@ environ.Env.read_env(path.join(BASE_DIR.parent, '.env'))
 SECRET_KEY = env('DJANGO_SECRET_KEY')
 FERNET_KEY = env('FERNET_KEY')
 
+BASE_NAME = env('BASE_NAME')
+BASE_TYPE = env('BASE_TYPE')
+BASE_TICKER = env('BASE_TICKER')
+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool('DEBUG')
 
