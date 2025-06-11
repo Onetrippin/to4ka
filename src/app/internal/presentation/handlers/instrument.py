@@ -2,7 +2,7 @@ from http import HTTPStatus
 
 from ninja import Body, Path
 
-from app.internal.common.response_entities import SuccessResponse, ErrorResponse
+from app.internal.common.response_entities import ErrorResponse, SuccessResponse
 from app.internal.domain.entities.instrument import InstrumentIn
 from app.internal.domain.services.instrument import InstrumentService
 

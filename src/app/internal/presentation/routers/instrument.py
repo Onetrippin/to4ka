@@ -1,8 +1,8 @@
 from http import HTTPStatus
 
-from ninja import Router, Body, Path
+from ninja import Body, Path, Router
 
-from app.internal.common.response_entities import SuccessResponse, ErrorResponse
+from app.internal.common.response_entities import ErrorResponse, SuccessResponse
 from app.internal.domain.entities.instrument import InstrumentIn
 from app.internal.presentation.handlers.instrument import InstrumentHandlers
 

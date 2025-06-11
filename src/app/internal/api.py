@@ -1,9 +1,9 @@
 from ninja import NinjaAPI
 
+from app.internal.common.auth import ApiKeyAuth
 from app.internal.data.repositories.instrument import InstrumentRepository
 from app.internal.data.repositories.order import OrderRepository
 from app.internal.data.repositories.user import UserRepository
-from app.internal.common.auth import ApiKeyAuth
 from app.internal.domain.services.encryption import EncryptionService
 from app.internal.domain.services.instrument import InstrumentService
 from app.internal.domain.services.order import OrderService

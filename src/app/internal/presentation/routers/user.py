@@ -1,7 +1,7 @@
 from http import HTTPStatus
 from uuid import UUID
 
-from ninja import Body, Router, Path
+from ninja import Body, Path, Router
 
 from app.internal.common.response_entities import ErrorResponse
 from app.internal.domain.entities.user import UserIn, UserOut
