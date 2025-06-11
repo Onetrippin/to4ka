@@ -1,5 +1,6 @@
 from http import HTTPStatus
 
+from app.internal.common.response_entities import SuccessResponse
 from app.internal.domain.services.order import OrderService
 
 
@@ -16,3 +17,8 @@ class OrderHandlers:
         user_id = request.user_id
         order = self.order_service.get_order(user_id, order_id)
         return HTTPStatus.OK, order
+
+    def cancel_order(self, request, order_id: str):
+        user_id = request.user_id
+        self.order_service.cancel_order(user_id, order_id)
+        return HTTPStatus.OK, SuccessResponse()

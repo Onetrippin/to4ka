@@ -1,5 +1,6 @@
 from typing import List
 
+from app.internal.common.response_entities import SuccessResponse
 from app.internal.domain.entities.order import (
     LimitOrderListBody,
     LimitOrderListOut,
@@ -50,3 +51,6 @@ class OrderService:
         raw_order = self.order_repo.get_order(user_id, order_id)
 
         return self._build_order_out(raw_order)
+
+    def cancel_order(self, user_id: int, order_id: str) -> None:
+        return self.order_repo.cancel_order(user_id, order_id)

@@ -3,6 +3,7 @@ from typing import List
 
 from ninja import Router
 
+from app.internal.common.response_entities import SuccessResponse
 from app.internal.domain.entities.order import LimitOrderListOut, MarketOrderListOut
 from app.internal.presentation.handlers.order import OrderHandlers
 
@@ -25,5 +26,13 @@ def get_orders_routers(order_handlers: OrderHandlers) -> Router:
     )
     def get_order(request, order_id: str):
         return order_handlers.get_order(request, order_id)
+
+    @router.delete(
+        '/order/{order_id}',
+        response={HTTPStatus.OK: SuccessResponse},
+        summary='Cancel Order',
+    )
+    def cancel_order(request, order_id: str):
+        return order_handlers.cancel_order(request, order_id)
 
     return router
