@@ -12,7 +12,8 @@ def get_users_router(user_handlers: UserHandlers) -> Router:
     @router.post(
         '/public/register',
         response={HTTPStatus.OK: UserOut},
-        summary='Register'
+        summary='Register',
+        auth=None,
     )
     def create(request, user_data: UserIn = Body(...)):
         return user_handlers.create(request, user_data)

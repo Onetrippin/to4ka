@@ -1,6 +1,7 @@
 from ninja import NinjaAPI
 
 from app.internal.data.repositories.user import UserRepository
+from app.internal.domain.services.auth import ApiKeyAuth
 from app.internal.domain.services.encryption import EncryptionService
 from app.internal.domain.services.user import UserService
 from app.internal.presentation.handlers.user import UserHandlers
@@ -8,7 +9,7 @@ from app.internal.presentation.routers.user import get_users_router
 
 
 def get_api():
-    api = NinjaAPI(title='To4ka API', version='1.0.0')
+    api = NinjaAPI(title='To4ka API', version='1.0.0', auth=[ApiKeyAuth()])
 
     user_repo = UserRepository()
     encryption_service = EncryptionService()

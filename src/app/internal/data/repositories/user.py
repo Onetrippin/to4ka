@@ -12,3 +12,6 @@ class UserRepository(IUserRepository):
             }
         )
         return {'id': user.id, 'name': user.name, 'role': user.role, 'api_key_encrypted': user.token_encrypted}
+
+    def get_user_by_token_hash(self, token_hash: str) -> dict | None:
+        return User.objects.filter(token_hash=token_hash).values_list('id', 'role').first()
