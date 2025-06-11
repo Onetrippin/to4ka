@@ -19,8 +19,8 @@ class ApiKeyAuth(HttpBearer):
         except ValueError:
             raise HttpError(401, 'Malformed Authorization header')
 
-        if token_type.upper() != 'TOKEN':
-            raise HttpError(401, 'Unsupported token type')
+        # if token_type.upper() != 'TOKEN':
+        #     raise HttpError(401, 'Unsupported token type')
 
         return self.authenticate(request, token)
 
