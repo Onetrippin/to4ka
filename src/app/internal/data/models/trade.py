@@ -13,7 +13,7 @@ class Trade(models.Model):
     buyer = models.ForeignKey(User, models.CASCADE, related_name='buy_trades')
     seller = models.ForeignKey(User, models.CASCADE, related_name='sell_trades')
     date = models.DateTimeField(auto_now_add=True)
-    price = models.DecimalField(max_digits=10, decimal_places=2)
+    price = models.IntegerField()
     quantity = models.IntegerField()
 
     objects = models.Manager()

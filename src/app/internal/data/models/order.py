@@ -23,7 +23,7 @@ class Order(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     direction = models.CharField(max_length=5, choices=ORDER_DIR_CHOICES)
     type = models.CharField(max_length=32, choices=ORDER_TYPE_CHOICES)
-    price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    price = models.IntegerField(default=0)
     quantity = models.IntegerField()
     status = models.CharField(max_length=32, choices=ORDER_STATUS_CHOICES)
     filled = models.IntegerField(default=0)

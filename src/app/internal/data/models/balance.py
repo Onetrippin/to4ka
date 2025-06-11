@@ -7,7 +7,7 @@ from app.internal.data.models.user import User
 class Balance(models.Model):
     user = models.ForeignKey(User, models.CASCADE, related_name='balances')
     tool = models.ForeignKey(Tool, models.CASCADE, related_name='balances')
-    amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    amount = models.IntegerField(default=0)
 
     objects = models.Manager()
 
