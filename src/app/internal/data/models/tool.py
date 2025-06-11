@@ -8,7 +8,6 @@ class Tool(models.Model):
     name = models.CharField(max_length=100)
     type = models.CharField(max_length=32, choices=TOOL_TYPE_CHOICES)
     ticker = models.CharField(max_length=10)
-    isin = models.CharField(max_length=12, null=True, blank=True)
 
     objects = models.Manager()
 
