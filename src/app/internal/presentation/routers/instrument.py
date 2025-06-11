@@ -1,6 +1,6 @@
 from http import HTTPStatus
 
-from ninja import Router, Body
+from ninja import Router, Body, Path
 
 from app.internal.common.response_entities import SuccessResponse, ErrorResponse
 from app.internal.domain.entities.instrument import InstrumentIn
@@ -17,5 +17,13 @@ def get_inst_router(inst_handlers: InstrumentHandlers) -> Router:
     )
     def add(request, inst_data: InstrumentIn = Body(...)):
         return inst_handlers.add(request, inst_data)
+
+    @router.delete(
+        '/admin/instrument/{ticker}',
+        response={HTTPStatus.OK: SuccessResponse, HTTPStatus.FORBIDDEN: ErrorResponse},
+        summary='Delete Instrument',
+    )
+    def delete(request, ticker: str = Path(...)):
+        return inst_handlers.delete(request, ticker)
 
     return router
