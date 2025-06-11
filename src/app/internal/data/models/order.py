@@ -1,3 +1,5 @@
+import uuid
+
 from django.db import models
 
 from app.internal.data.models.tool import Tool
@@ -17,7 +19,7 @@ class Order(models.Model):
         ('rejected', 'Отклонена'),
     ]
 
-    id = models.AutoField(primary_key=True)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tool = models.ForeignKey(Tool, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     direction = models.CharField(max_length=5, choices=ORDER_DIR_CHOICES)

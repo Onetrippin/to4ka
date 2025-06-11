@@ -69,3 +69,6 @@ clean:
 
 test:
 	$(DOCKER_COMPOSE) run --rm $(SERVICE) pytest --disable-warnings
+
+gen_fernet_key:
+	$(EXEC) python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
