@@ -17,3 +17,10 @@ class UserService:
         user_data = self.user_repo.create(name=user_data.name, token_encrypted=token_encrypted, token_hash=token_hash)
         token_decrypted = self.encryption_service.decrypt_data(user_data['api_key_encrypted'])
         return UserOut(id=user_data['id'], name=user_data['name'], role=user_data['role'], api_key=token_decrypted)
+
+    def delete(self, user_id: uuid.UUID, user_role: str) -> UserOut | None:
+        if user_role == 'ADMIN':
+            user_data = self.user_repo.delete_user_by_id(user_id)
+            token_decrypted = self.encryption_service.decrypt_data(user_data['token_encrypted'])
+            return UserOut(id=user_data['id'], name=user_data['name'], role=user_data['role'], api_key=token_decrypted)
+        return
