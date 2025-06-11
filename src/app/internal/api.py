@@ -20,7 +20,7 @@ def get_api():
     order_handlers = OrderHandlers(order_service=order_service)
     order_router = get_orders_routers(order_handlers)
     api.add_router('', order_router)
-    
+
     user_repo = UserRepository()
     encryption_service = EncryptionService()
     user_service = UserService(user_repo=user_repo, encryption_service=encryption_service)

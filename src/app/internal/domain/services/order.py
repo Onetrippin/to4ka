@@ -1,7 +1,11 @@
 from typing import List
 
-from app.internal.domain.entities.order import LimitOrderListBody, MarketOrderListBody, MarketOrderListOut, \
-    LimitOrderListOut
+from app.internal.domain.entities.order import (
+    LimitOrderListBody,
+    LimitOrderListOut,
+    MarketOrderListBody,
+    MarketOrderListOut,
+)
 from app.internal.domain.interfaces.order import IOrderRepository
 
 

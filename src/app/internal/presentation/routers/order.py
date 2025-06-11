@@ -3,7 +3,7 @@ from typing import List
 
 from ninja import Router
 
-from app.internal.domain.entities.order import MarketOrderListOut, LimitOrderListOut
+from app.internal.domain.entities.order import LimitOrderListOut, MarketOrderListOut
 from app.internal.presentation.handlers.order import OrderHandlers
 
 
