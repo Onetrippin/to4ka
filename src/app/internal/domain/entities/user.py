@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from ninja import Schema
 
 
@@ -6,7 +8,7 @@ class UserIn(Schema):
 
 
 class UserOut(Schema):
-    id: str
+    id: UUID
     name: str
     role: str
     api_key: str
