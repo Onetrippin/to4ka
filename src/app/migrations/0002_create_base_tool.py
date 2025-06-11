@@ -9,7 +9,6 @@ def create_base_tool(apps, schema_editor):
     if not Tool.objects.filter(name=settings.BASE_NAME).exists():
         Tool.objects.create(
             name=settings.BASE_NAME,
-            type=settings.BASE_TYPE,
             ticker=settings.BASE_TICKER,
         )
 
