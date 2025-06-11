@@ -16,7 +16,7 @@ class OrderAdmin(admin.ModelAdmin):
         'status',
         'filled',
         'created_at',
-        'closed_at'
+        'closed_at',
     )
     list_filter = ('tool', 'user', 'direction', 'type', 'status')
     search_fields = ('tool', 'user', 'direction', 'type', 'status')

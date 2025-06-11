@@ -9,7 +9,7 @@ class UserRepository(IUserRepository):
             defaults={
                 'token_encrypted': token_encrypted,
                 'token_hash': token_hash,
-            }
+            },
         )
         return {'id': user.id, 'name': user.name, 'role': user.role, 'api_key_encrypted': user.token_encrypted}
 
