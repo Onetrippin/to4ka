@@ -10,3 +10,7 @@ class IBalanceRepository(ABC):
     @abstractmethod
     def make_deposit(self, user_id: str, ticker: str, amount: int) -> None:
         ...
+
+    @abstractmethod
+    def make_withdraw(self, user_id: str, ticker: str, amount: int) -> None:
+        ...

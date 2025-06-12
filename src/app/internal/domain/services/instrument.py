@@ -1,9 +1,9 @@
-from app.internal.data.repositories.instrument import InstrumentRepository
 from app.internal.domain.entities.instrument import Instrument
+from app.internal.domain.interfaces.instrument import IInstrumentRepository
 
 
 class InstrumentService:
-    def __init__(self, inst_repo: InstrumentRepository) -> None:
+    def __init__(self, inst_repo: IInstrumentRepository) -> None:
         self.inst_repo = inst_repo
 
     def add(self, inst_data: Instrument, user_role: str) -> bool:

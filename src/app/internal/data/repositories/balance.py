@@ -12,3 +12,6 @@ class BalanceRepository(IBalanceRepository):
 
     def make_deposit(self, user_id: str, ticker: str, amount: int) -> None:
         Balance.objects.filter(user_id=user_id, tool__ticker=ticker).update(amount=F('amount') + amount)
+
+    def make_withdraw(self, user_id: str, ticker: str, amount: int) -> None:
+        Balance.objects.filter(user_id=user_id, tool__ticker=ticker).update(amount=F('amount') - amount)

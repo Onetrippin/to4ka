@@ -10,3 +10,9 @@ class Deposit(Schema):
     user_id: str
     ticker: str
     amount: int
+
+
+class Withdraw(Schema):
+    user_id: str
+    ticker: str
+    amount: int
