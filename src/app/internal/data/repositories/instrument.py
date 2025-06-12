@@ -12,8 +12,9 @@ class InstrumentRepository(IInstrumentRepository):
                 [Balance(user_id=user, tool_id=tool.id, amount=0) for user in User.objects.values_list('id', flat=True)]
             )
 
-    def delete(self, ticker: str) -> None:
-        Tool.objects.filter(ticker=ticker).delete()
+    def delete(self, ticker: str) -> int:
+        number, _ = Tool.objects.filter(ticker=ticker).delete()
+        return number
 
     def get_instruments_list(self) -> list:
         return list(Tool.objects.values('name', 'ticker'))

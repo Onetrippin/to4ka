@@ -7,7 +7,7 @@ class IInstrumentRepository(ABC):
         ...
 
     @abstractmethod
-    def delete(self, ticker: str) -> None:
+    def delete(self, ticker: str) -> int:
         ...
 
     @abstractmethod

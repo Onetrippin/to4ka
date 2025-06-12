@@ -12,11 +12,12 @@ class InstrumentService:
             return True
         return False
 
-    def delete(self, ticker: str, user_role: str) -> bool:
+    def delete(self, ticker: str, user_role: str) -> bool | None:
         if user_role == 'ADMIN':
-            self.inst_repo.delete(ticker=ticker)
-            return True
-        return False
+            if self.inst_repo.delete(ticker=ticker) > 0:
+                return True
+            return False
+        return
 
     def get_instruments_list(self) -> list[Instrument]:
         inst_list = self.inst_repo.get_instruments_list()
