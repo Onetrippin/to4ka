@@ -5,7 +5,7 @@ from app.internal.domain.entities.order import (
     LimitOrderListBody,
     LimitOrderListOut,
     MarketOrderListBody,
-    MarketOrderListOut, OrderBook, Level,
+    MarketOrderListOut, OrderBook, Level, Transaction,
 )
 from app.internal.domain.interfaces.order import IOrderRepository
 
@@ -61,3 +61,13 @@ class OrderService:
             bid_levels=[Level(price=bid['price'], qty=bid['quantity']) for bid in bids],
             ask_levels=[Level(price=ask['price'], qty=ask['quantity']) for ask in asks],
         )
+
+    def get_trans_history(self, ticker: str, limit: int) -> list[Transaction]:
+        return [
+            Transaction(
+                ticker=trans['tool__ticker'],
+                amount=trans['quantity'],
+                price=trans['price'],
+                timestamp=trans['date']
+            ) for trans in self.order_repo.get_trans_list(ticker, limit)
+        ]

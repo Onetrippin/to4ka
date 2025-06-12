@@ -4,6 +4,7 @@ from django.db.models import F
 from django.utils import timezone
 
 from app.internal.data.models.order import Order
+from app.internal.data.models.trade import Trade
 from app.internal.domain.interfaces.order import IOrderRepository
 
 
@@ -72,3 +73,6 @@ class OrderRepository(IOrderRepository):
         )[:limit].values('price', 'quantity')
 
         return bid_orders, ask_orders
+
+    def get_trans_list(self, ticker: str, limit: int) -> list:
+        return list(Trade.objects.filter(tool__ticker=ticker).values('tool__ticker', 'quantity', 'price', 'date'))

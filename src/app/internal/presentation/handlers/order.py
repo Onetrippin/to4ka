@@ -27,3 +27,6 @@ class OrderHandlers:
 
     def get_orderbook(self, request, ticker: str = Path(...), limit: int = Query(10)):
         return HTTPStatus.OK, self.order_service.get_orderbook(ticker, limit)
+
+    def get_trans_history(self, request, ticker: str = Path(...), limit: int = Query(10)):
+        return HTTPStatus.OK, self.order_service.get_trans_history(ticker, limit)

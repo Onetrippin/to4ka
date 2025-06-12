@@ -4,7 +4,7 @@ from typing import List
 from ninja import Router, Query, Path
 
 from app.internal.common.response_entities import SuccessResponse
-from app.internal.domain.entities.order import LimitOrderListOut, MarketOrderListOut, OrderBook
+from app.internal.domain.entities.order import LimitOrderListOut, MarketOrderListOut, OrderBook, Transaction
 from app.internal.presentation.handlers.order import OrderHandlers
 
 
@@ -43,5 +43,14 @@ def get_orders_routers(order_handlers: OrderHandlers) -> Router:
     )
     def get_orderbook(request, ticker: str = Path(...), limit: int = Query(10)):
         return order_handlers.get_orderbook(request, ticker, limit)
+
+    @router.get(
+        '/public/transactions/{ticker}',
+        response={HTTPStatus.OK: list[Transaction]},
+        summary='Get Transaction History',
+        auth=None,
+    )
+    def get_trans_history(request, ticker: str = Path(...), limit: int = Query(10)):
+        return order_handlers.get_trans_history(request, ticker, limit)
 
     return router

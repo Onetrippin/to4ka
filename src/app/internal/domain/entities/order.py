@@ -42,3 +42,10 @@ class Level(Schema):
 class OrderBook(Schema):
     bid_levels: list[Level]
     ask_levels: list[Level]
+
+
+class Transaction(Schema):
+    ticker: str
+    amount: int
+    price: int
+    timestamp: datetime
