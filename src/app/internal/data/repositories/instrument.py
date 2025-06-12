@@ -8,3 +8,6 @@ class InstrumentRepository(IInstrumentRepository):
 
     def delete(self, ticker: str) -> None:
         Tool.objects.filter(ticker=ticker).delete()
+
+    def get_instruments_list(self) -> list:
+        return list(Tool.objects.values('name', 'ticker'))

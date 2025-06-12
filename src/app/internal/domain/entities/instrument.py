@@ -1,6 +1,6 @@
 from ninja import Schema
 
 
-class InstrumentIn(Schema):
+class Instrument(Schema):
     name: str
     ticker: str
