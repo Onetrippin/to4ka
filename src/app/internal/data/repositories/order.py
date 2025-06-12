@@ -1,6 +1,5 @@
 from typing import Any, Dict, List
 
-from django.db.models import F
 from django.utils import timezone
 
 from app.internal.data.models.order import Order
