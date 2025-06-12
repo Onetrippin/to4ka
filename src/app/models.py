@@ -1,3 +1,4 @@
+from app.internal.data.models.admin_user import AdminUser
 from app.internal.data.models.balance import Balance
 from app.internal.data.models.order import Order
 from app.internal.data.models.tool import Tool

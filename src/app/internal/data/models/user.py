@@ -1,14 +1,18 @@
-from django.contrib.auth.models import AbstractUser
+import uuid
+
 from django.db import models
 
 from app.internal.data.models.tool import Tool
 
 
-class User(AbstractUser):
-    id = models.AutoField(primary_key=True)
-    email = models.EmailField(unique=True)
-    password = models.CharField(max_length=128)
-    is_staff = models.BooleanField(default=False)
+class User(models.Model):
+    USER_ROLES = [('USER', 'Пользователь'), ('ADMIN', 'Админ')]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=64, unique=True)
+    role = models.CharField(max_length=32, choices=USER_ROLES, default='USER')
+    token_encrypted = models.TextField(unique=True)
+    token_hash = models.CharField(max_length=64, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     tools = models.ManyToManyField(Tool, through='UserTool', related_name='users')
 
@@ -19,4 +23,4 @@ class User(AbstractUser):
         verbose_name_plural = 'Users'
 
     def __str__(self):
-        return f'{self.email}'
+        return f'{self.name}'

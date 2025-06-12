@@ -19,10 +19,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Setup make
-        run: apk add make || true
       - name: Login to GitHub Container Registry
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
       - name: Copy .env file
         run: echo "${{ secrets.DOT_ENV }}" > .env
       - name: Set tagged image name
@@ -37,10 +35,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      - name: Setup make
-        run: apk add make || true
       - name: Login to GitHub Container Registry
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
       - name: Copy .env file
         run: echo "${{ secrets.DOT_ENV }}" > .env
       - name: Set tagged image name
@@ -59,7 +55,8 @@ jobs:
     environment: test
     needs: build-test
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
       - name: Copy .env file
         run: echo "${{ secrets.DOT_ENV }}" > .env
       - name: Run lint
@@ -71,7 +68,8 @@ jobs:
     environment: prod
     needs: build-prod
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
       - name: Copy .env file
         run: echo "${{ secrets.DOT_ENV }}" > .env
       - name: Run lint
@@ -83,7 +81,8 @@ jobs:
     environment: test
     needs: lint-test
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
       - name: Copy .env file
         run: echo "${{ secrets.DOT_ENV }}" > .env
       - name: Run tests
@@ -96,7 +95,8 @@ jobs:
     environment: prod
     needs: lint-prod
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
       - name: Copy .env file
         run: echo "${{ secrets.DOT_ENV }}" > .env
       - name: Run tests
@@ -112,9 +112,10 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
       - name: Login to GitHub Container Registry
-        run: echo "${{ secrets.FTPI_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+        run: echo "${{ secrets.FTPI_PAT }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
       - name: Copy .env file
         run: echo "${{ secrets.DOT_ENV }}" > .env
       - name: Set tagged image name
@@ -131,9 +132,10 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
       - name: Login to GitHub Container Registry
-        run: echo "${{ secrets.FTPI_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+        run: echo "${{ secrets.FTPI_PAT }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
       - name: Copy .env file
         run: echo "${{ secrets.DOT_ENV }}" > .env
       - name: Set tagged image name

@@ -54,13 +54,12 @@ pull:
 	docker pull ${IMAGE_APP}
 
 up:
-	$(DOCKER_COMPOSE) up --build -d
+	$(DOCKER_COMPOSE) up -d
 
 down:
 	$(DOCKER_COMPOSE) down
 
 rebuild:
-	$(DOCKER_COMPOSE) down
 	$(DOCKER_COMPOSE) up --build -d
 
 clean:
@@ -70,3 +69,6 @@ clean:
 
 test:
 	$(DOCKER_COMPOSE) run --rm $(SERVICE) pytest --disable-warnings
+
+gen_fernet_key:
+	$(EXEC) python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
