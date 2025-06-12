@@ -20,3 +20,11 @@ class IOrderRepository(ABC):
     @abstractmethod
     def cancel_order(self, user_id: int, order_id: str) -> None:
         ...
+
+    @abstractmethod
+    def get_levels_info(self, ticker: str, limit: int) -> tuple:
+        ...
+
+    @abstractmethod
+    def get_trans_list(self, ticker: str, limit: int) -> list:
+        ...

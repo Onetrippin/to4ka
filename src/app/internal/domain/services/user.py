@@ -1,12 +1,12 @@
 import uuid
 
-from app.internal.data.repositories.user import UserRepository
 from app.internal.domain.entities.user import UserIn, UserOut
 from app.internal.domain.interfaces.encryption import IEncryptionService
+from app.internal.domain.interfaces.user import IUserRepository
 
 
 class UserService:
-    def __init__(self, user_repo: UserRepository, encryption_service: IEncryptionService) -> None:
+    def __init__(self, user_repo: IUserRepository, encryption_service: IEncryptionService) -> None:
         self.user_repo = user_repo
         self.encryption_service = encryption_service
 

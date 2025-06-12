@@ -9,3 +9,7 @@ class IInstrumentRepository(ABC):
     @abstractmethod
     def delete(self, ticker: str) -> None:
         ...
+
+    @abstractmethod
+    def get_instruments_list(self) -> list:
+        ...

@@ -1,16 +1,20 @@
 from ninja import NinjaAPI
 
 from app.internal.common.auth import ApiKeyAuth
+from app.internal.data.repositories.balance import BalanceRepository
 from app.internal.data.repositories.instrument import InstrumentRepository
 from app.internal.data.repositories.order import OrderRepository
 from app.internal.data.repositories.user import UserRepository
+from app.internal.domain.services.balance import BalanceService
 from app.internal.domain.services.encryption import EncryptionService
 from app.internal.domain.services.instrument import InstrumentService
 from app.internal.domain.services.order import OrderService
 from app.internal.domain.services.user import UserService
+from app.internal.presentation.handlers.balance import BalanceHandlers
 from app.internal.presentation.handlers.instrument import InstrumentHandlers
 from app.internal.presentation.handlers.order import OrderHandlers
 from app.internal.presentation.handlers.user import UserHandlers
+from app.internal.presentation.routers.balance import get_balance_router
 from app.internal.presentation.routers.instrument import get_inst_router
 from app.internal.presentation.routers.order import get_orders_routers
 from app.internal.presentation.routers.user import get_users_router
@@ -37,6 +41,12 @@ def get_api():
     inst_handlers = InstrumentHandlers(inst_service=inst_service)
     inst_router = get_inst_router(inst_handlers)
     api.add_router('', inst_router)
+
+    balance_repo = BalanceRepository()
+    balance_service = BalanceService(balance_repo=balance_repo)
+    balance_handlers = BalanceHandlers(balance_service=balance_service)
+    balance_router = get_balance_router(balance_handlers)
+    api.add_router('', balance_router)
 
     return api
 
