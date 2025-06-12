@@ -1,7 +1,7 @@
 from uuid import UUID
 
 from ninja import Schema
-from pydantic import RootModel, Field
+from pydantic import Field, RootModel
 
 
 class Balance(RootModel):
