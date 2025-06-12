@@ -2,10 +2,13 @@ from typing import List
 
 from app.internal.common.response_entities import SuccessResponse
 from app.internal.domain.entities.order import (
+    Level,
     LimitOrderListBody,
     LimitOrderListOut,
     MarketOrderListBody,
-    MarketOrderListOut, OrderBook, Level, Transaction,
+    MarketOrderListOut,
+    OrderBook,
+    Transaction,
 )
 from app.internal.domain.interfaces.order import IOrderRepository
 
@@ -65,9 +68,7 @@ class OrderService:
     def get_trans_history(self, ticker: str, limit: int) -> list[Transaction]:
         return [
             Transaction(
-                ticker=trans['tool__ticker'],
-                amount=trans['quantity'],
-                price=trans['price'],
-                timestamp=trans['date']
-            ) for trans in self.order_repo.get_trans_list(ticker, limit)
+                ticker=trans['tool__ticker'], amount=trans['quantity'], price=trans['price'], timestamp=trans['date']
+            )
+            for trans in self.order_repo.get_trans_list(ticker, limit)
         ]

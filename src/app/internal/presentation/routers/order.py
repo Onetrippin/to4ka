@@ -1,7 +1,7 @@
 from http import HTTPStatus
 from typing import List
 
-from ninja import Router, Query, Path
+from ninja import Path, Query, Router
 
 from app.internal.common.response_entities import SuccessResponse
 from app.internal.domain.entities.order import LimitOrderListOut, MarketOrderListOut, OrderBook, Transaction

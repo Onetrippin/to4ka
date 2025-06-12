@@ -1,8 +1,8 @@
 from http import HTTPStatus
 
-from ninja import Router, Body
+from ninja import Body, Router
 
-from app.internal.common.response_entities import SuccessResponse, ErrorResponse
+from app.internal.common.response_entities import ErrorResponse, SuccessResponse
 from app.internal.domain.entities.balance import Balance, Deposit, Withdraw
 from app.internal.presentation.handlers.balance import BalanceHandlers
 

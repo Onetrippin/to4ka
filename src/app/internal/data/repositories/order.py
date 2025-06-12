@@ -57,19 +57,13 @@ class OrderRepository(IOrderRepository):
     def get_levels_info(self, ticker: str, limit: int) -> tuple:
         statuses = ['NEW', 'PARTIALLY_EXECUTED']
 
-        bid_orders = Order.objects.filter(
-            tool__ticker=ticker,
-            direction='BUY',
-            status__in=statuses,
-            type='limit'
-        )[:limit].values('price', 'quantity')
+        bid_orders = Order.objects.filter(tool__ticker=ticker, direction='BUY', status__in=statuses, type='limit')[
+            :limit
+        ].values('price', 'quantity')
 
-        ask_orders = Order.objects.filter(
-            tool__ticker=ticker,
-            direction='SELL',
-            status__in=statuses,
-            type='limit'
-        )[:limit].values('price', 'quantity')
+        ask_orders = Order.objects.filter(tool__ticker=ticker, direction='SELL', status__in=statuses, type='limit')[
+            :limit
+        ].values('price', 'quantity')
 
         return bid_orders, ask_orders
 
