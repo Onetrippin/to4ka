@@ -1,7 +1,9 @@
 from typing import List
 from uuid import UUID
 
-from app.internal.common.response_entities import SuccessResponse
+from django.db import transaction
+from django.utils import timezone
+
 from app.internal.domain.entities.order import (
     Level,
     LimitOrderListBody,
@@ -17,6 +19,12 @@ from app.internal.domain.interfaces.order import IOrderRepository
 class OrderService:
     def __init__(self, order_repo: IOrderRepository) -> None:
         self.order_repo = order_repo
+
+    def _update_status_and_close_if_needed(self, user_id: UUID, order_id: UUID, filled: int) -> None:
+        order = self.order_repo.get_order(user_id, order_id)
+        status = 'EXECUTED' if filled >= order['quantity'] else 'PARTIALLY_EXECUTED'
+        closed_at = timezone.now() if status == 'EXECUTED' else None
+        self.order_repo.update_order_status(order_id, status, filled, closed_at)
 
     def _build_order_out(self, raw_order: dict) -> LimitOrderListOut | MarketOrderListOut:
         if raw_order['type'] == 'limit':
@@ -73,3 +81,58 @@ class OrderService:
             )
             for trans in self.order_repo.get_trans_list(ticker, limit)
         ]
+
+    @transaction.atomic
+    def create_market_order(self, user_id: UUID, order_data: MarketOrderListBody) -> UUID:
+        opposite_orders = self.order_repo.get_opposite_limit_orders_for_market(order_data.direction, order_data.ticker)
+
+        remaining_qty = order_data.qty
+        total_filled = 0
+
+        for opp in opposite_orders:
+            available_qty = opp['quantity'] - opp['filled']
+            if available_qty <= 0:
+                continue
+
+            trade_qty = min(remaining_qty, available_qty)
+
+            self.order_repo.create_trade_from_match(
+                user_id=user_id,
+                direction=order_data.direction,
+                match_order_id=opp['id'],
+                tool_id=opp['tool_id'],
+                price=opp['price'],
+                quantity=trade_qty,
+            )
+
+            opp_filled = opp['filled'] + trade_qty
+            self._update_status_and_close_if_needed(opp['id'], opp_filled)
+
+            remaining_qty -= trade_qty
+            total_filled += trade_qty
+
+            if remaining_qty == 0:
+                break
+
+        if remaining_qty > 0:
+            order = self.order_repo.create_market_order(
+                user_id=user_id,
+                order_data=order_data,
+                status='REJECTED',
+                filled=total_filled,
+                closed_at=timezone.now(),
+            )
+            return order.id
+
+        order = self.order_repo.create_market_order(
+            user_id=user_id,
+            order_data=order_data,
+            status='EXECUTED',
+            filled=total_filled,
+            closed_at=timezone.now(),
+        )
+        return order.id
+
+    @transaction.atomic
+    def create_limit_order(self, user_id: UUID, order_data: LimitOrderListBody) -> UUID:
+        ...

@@ -4,8 +4,16 @@ from uuid import UUID
 
 from ninja import Path, Query, Router
 
-from app.internal.common.response_entities import SuccessResponse
-from app.internal.domain.entities.order import LimitOrderListOut, MarketOrderListOut, OrderBook, Transaction
+from app.internal.common.response_entities import SuccessResponse, ValidationErrorResponse
+from app.internal.domain.entities.order import (
+    OrderBook,
+    Transaction,
+    CreateOrderOut,
+    LimitOrderListBody,
+    MarketOrderListBody,
+    LimitOrderListOut,
+    MarketOrderListOut
+)
 from app.internal.presentation.handlers.order import OrderHandlers
 
 
@@ -53,5 +61,13 @@ def get_orders_routers(order_handlers: OrderHandlers) -> Router:
     )
     def get_trans_history(request, ticker: str = Path(...), limit: int = Query(10)):
         return order_handlers.get_trans_history(request, ticker, limit)
+
+    @router.post(
+        '/order',
+        response={HTTPStatus.OK: CreateOrderOut, HTTPStatus.UNPROCESSABLE_ENTITY: ValidationErrorResponse},
+        summary='Create Order',
+    )
+    def create_order(request, order_data: LimitOrderListBody | MarketOrderListBody):
+        return order_handlers.create_order(request, order_data)
 
     return router

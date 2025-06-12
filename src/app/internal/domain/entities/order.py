@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 from uuid import UUID
 
 from ninja import Schema
@@ -6,7 +7,7 @@ from pydantic import Field
 
 
 class BaseOrderListBody(Schema):
-    direction: str
+    direction: Literal['BUY', 'SELL']
     ticker: str
     qty: int = Field(..., ge=1)
 
@@ -50,3 +51,8 @@ class Transaction(Schema):
     amount: int
     price: int
     timestamp: datetime
+
+
+class CreateOrderOut(Schema):
+    success: bool = True
+    order_id: UUID
