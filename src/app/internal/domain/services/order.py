@@ -1,4 +1,5 @@
 from typing import List
+from uuid import UUID
 
 from app.internal.common.response_entities import SuccessResponse
 from app.internal.domain.entities.order import (
@@ -45,17 +46,17 @@ class OrderService:
             ),
         )
 
-    def get_order_list(self, user_id: int) -> List[LimitOrderListOut | MarketOrderListOut]:
+    def get_order_list(self, user_id: UUID) -> List[LimitOrderListOut | MarketOrderListOut]:
         raw_orders = self.order_repo.get_order_list(user_id)
 
         return [self._build_order_out(raw_order) for raw_order in raw_orders]
 
-    def get_order(self, user_id: int, order_id: str) -> LimitOrderListOut | MarketOrderListOut:
+    def get_order(self, user_id: UUID, order_id: UUID) -> LimitOrderListOut | MarketOrderListOut:
         raw_order = self.order_repo.get_order(user_id, order_id)
 
         return self._build_order_out(raw_order)
 
-    def cancel_order(self, user_id: int, order_id: str) -> None:
+    def cancel_order(self, user_id: UUID, order_id: UUID) -> None:
         return self.order_repo.cancel_order(user_id, order_id)
 
     def get_orderbook(self, ticker: str, limit: int) -> OrderBook:

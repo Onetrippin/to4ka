@@ -1,4 +1,5 @@
 from typing import Any, Dict, List
+from uuid import UUID
 
 from django.utils import timezone
 
@@ -8,7 +9,7 @@ from app.internal.domain.interfaces.order import IOrderRepository
 
 
 class OrderRepository(IOrderRepository):
-    def get_order_list(self, user_id: int) -> List[Dict[str, Any]]:
+    def get_order_list(self, user_id: UUID) -> List[Dict[str, Any]]:
         return list(
             Order.objects.filter(user_id=user_id).values(
                 'id',
@@ -27,7 +28,7 @@ class OrderRepository(IOrderRepository):
     def create_order(self):
         ...
 
-    def get_order(self, user_id: int, order_id: str) -> Dict[str, Any]:
+    def get_order(self, user_id: UUID, order_id: UUID) -> Dict[str, Any]:
         return (
             Order.objects.filter(user_id=user_id, id=order_id)
             .values(
@@ -45,7 +46,7 @@ class OrderRepository(IOrderRepository):
             .first()
         )
 
-    def cancel_order(self, user_id: int, order_id: str) -> None:
+    def cancel_order(self, user_id: UUID, order_id: UUID) -> None:
         updated_order = Order.objects.filter(user_id=user_id, id=order_id).update(
             status='CANCELLED',
             closed_at=timezone.now(),

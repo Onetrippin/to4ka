@@ -1,4 +1,5 @@
 from http import HTTPStatus
+from uuid import UUID
 
 from ninja import Path, Query
 
@@ -15,12 +16,12 @@ class OrderHandlers:
         order_list = self.order_service.get_order_list(user_id)
         return HTTPStatus.OK, order_list
 
-    def get_order(self, request, order_id: str = Path(...)):
+    def get_order(self, request, order_id: UUID = Path(...)):
         user_id = request.user_id
         order = self.order_service.get_order(user_id, order_id)
         return HTTPStatus.OK, order
 
-    def cancel_order(self, request, order_id: str = Path(...)):
+    def cancel_order(self, request, order_id: UUID = Path(...)):
         user_id = request.user_id
         self.order_service.cancel_order(user_id, order_id)
         return HTTPStatus.OK, SuccessResponse

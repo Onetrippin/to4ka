@@ -1,5 +1,6 @@
 from http import HTTPStatus
 from typing import List
+from uuid import UUID
 
 from ninja import Path, Query, Router
 
@@ -24,7 +25,7 @@ def get_orders_routers(order_handlers: OrderHandlers) -> Router:
         response={HTTPStatus.OK: LimitOrderListOut | MarketOrderListOut},
         summary='Get Order',
     )
-    def get_order(request, order_id: str = Path(...)):
+    def get_order(request, order_id: UUID = Path(...)):
         return order_handlers.get_order(request, order_id)
 
     @router.delete(
@@ -32,7 +33,7 @@ def get_orders_routers(order_handlers: OrderHandlers) -> Router:
         response={HTTPStatus.OK: SuccessResponse},
         summary='Cancel Order',
     )
-    def cancel_order(request, order_id: str = Path(...)):
+    def cancel_order(request, order_id: UUID = Path(...)):
         return order_handlers.cancel_order(request, order_id)
 
     @router.get(
