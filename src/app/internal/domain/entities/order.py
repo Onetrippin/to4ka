@@ -2,12 +2,13 @@ from datetime import datetime
 from uuid import UUID
 
 from ninja import Schema
+from pydantic import Field
 
 
 class BaseOrderListBody(Schema):
     direction: str
     ticker: str
-    qty: int
+    qty: int = Field(..., ge=1)
 
 
 class MarketOrderListBody(BaseOrderListBody):
@@ -15,7 +16,7 @@ class MarketOrderListBody(BaseOrderListBody):
 
 
 class LimitOrderListBody(BaseOrderListBody):
-    price: int
+    price: int = Field(..., gt=0)
 
 
 class BaseOrderListOut(Schema):

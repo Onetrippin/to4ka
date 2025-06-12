@@ -1,5 +1,7 @@
+from uuid import UUID
+
 from ninja import Schema
-from pydantic import RootModel
+from pydantic import RootModel, Field
 
 
 class Balance(RootModel):
@@ -7,12 +9,12 @@ class Balance(RootModel):
 
 
 class Deposit(Schema):
-    user_id: str
+    user_id: UUID
     ticker: str
-    amount: int
+    amount: int = Field(..., gt=0)
 
 
 class Withdraw(Schema):
-    user_id: str
+    user_id: UUID
     ticker: str
-    amount: int
+    amount: int = Field(..., gt=0)
