@@ -1,5 +1,6 @@
 from typing import Any, Dict, List
 
+from django.db.models import F
 from django.utils import timezone
 
 from app.internal.data.models.order import Order
@@ -52,3 +53,22 @@ class OrderRepository(IOrderRepository):
 
         if updated_order:
             Order.objects.filter(user_id=user_id, id=order_id).delete()
+
+    def get_levels_info(self, ticker: str, limit: int) -> tuple:
+        statuses = ['NEW', 'PARTIALLY_EXECUTED']
+
+        bid_orders = Order.objects.filter(
+            tool__ticker=ticker,
+            direction='BUY',
+            status__in=statuses,
+            type='limit'
+        )[:limit].values('price', 'quantity')
+
+        ask_orders = Order.objects.filter(
+            tool__ticker=ticker,
+            direction='SELL',
+            status__in=statuses,
+            type='limit'
+        )[:limit].values('price', 'quantity')
+
+        return bid_orders, ask_orders

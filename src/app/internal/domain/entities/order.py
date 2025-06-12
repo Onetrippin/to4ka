@@ -32,3 +32,13 @@ class MarketOrderListOut(BaseOrderListOut):
 class LimitOrderListOut(BaseOrderListOut):
     body: LimitOrderListBody
     filled: int
+
+
+class Level(Schema):
+    price: int
+    qty: int
+
+
+class OrderBook(Schema):
+    bid_levels: list[Level]
+    ask_levels: list[Level]

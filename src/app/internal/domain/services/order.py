@@ -5,7 +5,7 @@ from app.internal.domain.entities.order import (
     LimitOrderListBody,
     LimitOrderListOut,
     MarketOrderListBody,
-    MarketOrderListOut,
+    MarketOrderListOut, OrderBook, Level,
 )
 from app.internal.domain.interfaces.order import IOrderRepository
 
@@ -54,3 +54,10 @@ class OrderService:
 
     def cancel_order(self, user_id: int, order_id: str) -> None:
         return self.order_repo.cancel_order(user_id, order_id)
+
+    def get_orderbook(self, ticker: str, limit: int) -> OrderBook:
+        bids, asks = self.order_repo.get_levels_info(ticker, limit)
+        return OrderBook(
+            bid_levels=[Level(price=bid['price'], qty=bid['quantity']) for bid in bids],
+            ask_levels=[Level(price=ask['price'], qty=ask['quantity']) for ask in asks],
+        )
