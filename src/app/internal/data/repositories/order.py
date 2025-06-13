@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Literal
+from typing import Any, Dict, List, Literal, Optional
 from uuid import UUID
 
 from django.db import transaction
@@ -31,7 +31,9 @@ class OrderRepository(IOrderRepository):
             )
         )
 
-    def update_order_status(self, order_id: UUID, status: str, filled: Optional[int], closed_at: Optional[datetime]) -> None:
+    def update_order_status(
+        self, order_id: UUID, status: str, filled: Optional[int], closed_at: Optional[datetime]
+    ) -> None:
         update_fields: Dict[str, Any] = {'status': status}
         if filled is not None:
             update_fields['filled'] = filled
@@ -83,7 +85,9 @@ class OrderRepository(IOrderRepository):
     def get_trans_list(self, ticker: str, limit: int) -> list:
         return list(Trade.objects.filter(tool__ticker=ticker).values('tool__ticker', 'quantity', 'price', 'date'))
 
-    def get_opposite_limit_orders_for_market(self, direction: Literal['BUY', 'SELL'], ticker: str) -> List[Dict[str, Any]]:
+    def get_opposite_limit_orders_for_market(
+        self, direction: Literal['BUY', 'SELL'], ticker: str
+    ) -> List[Dict[str, Any]]:
         return list(
             Order.objects.filter(
                 tool__ticker=ticker,
@@ -95,44 +99,27 @@ class OrderRepository(IOrderRepository):
             .values('id', 'price', 'quantity', 'filled', 'tool_id', 'user_id')
         )
 
-    def get_opposite_limit_orders_for_limit(self, direction: Literal['BUY', 'SELL'], ticker: str, price: float) -> List[Dict[str, Any]]:
+    def get_opposite_limit_orders_for_limit(
+        self, direction: Literal['BUY', 'SELL'], ticker: str, price: float
+    ) -> List[Dict[str, Any]]:
         return list(
             Order.objects.filter(
                 tool__ticker=ticker,
                 direction='SELL' if direction == 'BUY' else 'BUY',
                 status__in=['NEW', 'PARTIALLY_EXECUTED'],
                 type='limit',
-            ).filter(Q(price__lte=price) if direction == 'BUY' else Q(price__gte=price))
+            )
+            .filter(Q(price__lte=price) if direction == 'BUY' else Q(price__gte=price))
             .order_by('price' if direction == 'BUY' else '-price')
             .values('id', 'price', 'quantity', 'filled', 'tool_id')
         )
 
-    def create_trade_from_match(
-            self,
-            user_id: UUID,
-            direction: Literal['BUY', 'SELL'],
-            match_order_id: UUID,
-            tool_id: UUID,
-            price: int,
-            quantity: int,
-    ) -> Trade:
-        match_order = Order.objects.get(id=match_order_id)
-
-        return Trade.objects.create(
-            buyer_id=user_id if direction == 'BUY' else match_order.user_id,
-            seller_id=match_order.user_id if direction == 'BUY' else user_id,
-            tool_id=tool_id,
-            quantity=quantity,
-            price=price,
-            date=timezone.now(),
-        )
-
     def create_market_order(
-            self,
-            user_id: UUID,
-            order_data: MarketOrderListBody,
-            status: str,
-    ) -> Order:
+        self,
+        user_id: UUID,
+        order_data: MarketOrderListBody,
+        status: str,
+    ) -> UUID:
         return Order.objects.create(
             user_id=user_id,
             tool_id=Subquery(Tool.objects.filter(ticker=order_data.ticker).values('id')[:1]),
@@ -141,65 +128,78 @@ class OrderRepository(IOrderRepository):
             quantity=order_data.qty,
             status=status,
             closed_at=timezone.now(),
+        ).id
+
+    def execute_market_order(self, trades_info: dict, order_data: MarketOrderListBody) -> UUID:
+        with transaction.atomic:
+            self.create_trades(trades_info=trades_info)
+            self.update_balances(trades_info=trades_info)
+            return self.create_market_order(trades_info['user_id'], order_data, 'EXECUTED')
+
+    def create_trades(self, trades_info: dict) -> None:
+        Trade.objects.bulk_create(
+            [
+                Trade(
+                    buyer_id=trades_info['user_id'] if trades_info['direction'] == 'BUY' else trade['user_id'],
+                    seller_id=trade['user_id'] if trades_info['direction'] == 'BUY' else trades_info['user_id'],
+                    tool_id=trade['tool_id'],
+                    quantity=trade['quantity'],
+                    price=trade['price'],
+                    date=timezone.now(),
+                )
+                for trade in trades_info['trades']
+            ]
         )
 
-    def execute_market_order(self, trades_info: dict) -> None:
-        with transaction.atomic:
-            Trade.objects.bulk_create(
-                [
-                    Trade(
-                        buyer_id=trades_info['user_id'] if trades_info['direction'] == 'BUY' else trade['user_id'],
-                        seller_id=trade['user_id'] if trades_info['direction'] == 'BUY' else trades_info['user_id'],
-                        tool_id=trade['tool_id'],
-                        quantity=trade['quantity'],
-                        price=trade['price'],
-                        date=timezone.now(),
-                    ) for trade in trades_info['trades']
-                ]
+    def update_balances(self, trades_info: dict) -> None:
+        rub_tool_id = Tool.objects.filter(ticker='RUB').values_list('id', flat=True).first()
+        deltas = {}
+        net_rub_change = 0
+        net_tool_change = 0
+        for trade in trades_info['trades']:
+            cost = trade['quantity'] * trade['price']
+            if trades_info['direction'] == 'BUY':
+                deltas.setdefault((trade['user_id'], rub_tool_id), [0, 0])[0] += cost
+                deltas.setdefault((trade['user_id'], trade['tool_id']), [0, 0])[1] -= trade['quantity']
+                net_rub_change -= cost
+                net_tool_change += trade['quantity']
+            else:
+                deltas.setdefault((trade['user_id'], rub_tool_id), [0, 0])[1] -= cost
+                deltas.setdefault((trade['user_id'], trade['tool_id']), [0, 0])[0] += trade['quantity']
+                net_rub_change += cost
+                net_tool_change -= trade['quantity']
+        if net_rub_change != 0:
+            deltas.setdefault((trades_info['user_id'], rub_tool_id), [0, 0])[0] += net_rub_change
+        if net_tool_change != 0:
+            tool_id = trades_info['trades'][0]['tool_id']
+            deltas.setdefault((trades_info['user_id'], tool_id), [0, 0])[0] += net_tool_change
+        keys = list(deltas.keys())
+        user_ids = list({uid for uid, _ in keys})
+        tool_ids = list({tid for _, tid in keys})
+        balances = list(
+            Balance.objects.filter(
+                user_id__in=user_ids,
+                tool_id__in=tool_ids,
             )
-            # тут я начал делать изменение балансов, но вспомнил про перевод в рубли и поэтому тут надо переделать
-            # то есть для рублей надо везде сделать перевод quantity * price
-            # менять также надо с bulk_update
-            # просто в случае если BUY, то прибавлять то, что купил, вычитать можно в конце 1 раз всю сумму рублей
-            # у чела же убавлять с резерв счёта то, что покупаешь и прибавлять рубли на счёт
-            # в случае SELL наоборот - ты минусуешь со своего счёта того, что продаёшь и прибавляешь на рублёвый
-            # а у чела минусуешь с резерва рублёвого и прибавляешь то, что покупаешь на обычный
-            keys = {(t['user_id'], t['tool_id']) for t in trades_info['trades']}
-            balance_map = {
-                (b.user_id, b.tool_id): b for b in list(
-                    Balance.objects.filter(
-                        Q(user_id__in=[k[0] for k in keys]),
-                        Q(tool_id__in=[k[1] for k in keys]),
-                    )
-                )
-            }
-            delta_amounts = {}
-            delta_reserved = {}
-            for trade in trades_info['trades']:
-                key = (trade['user_id'], trade['tool_id'])
-                qty = trade['quantity']
-
-                if trades_info['direction'] == 'BUY':
-                    if key in delta_amounts:
-                        delta_amounts[key] += qty
-                    else:
-                        delta_amounts[key] = qty
-                else:
-                    if key in delta_reserved:
-                        delta_reserved[key] -= qty
-                    else:
-                        delta_reserved[key] = -qty
-            Balance.objects.bulk_update(
-
-            )
+        )
+        balance_map = {(b.user_id, b.tool_id): b for b in balances}
+        for (uid, tid), (amount_delta, reserved_delta) in deltas.items():
+            balance = balance_map.get((uid, tid))
+            if not balance:
+                balance = Balance(user_id=uid, tool_id=tid, amount=0, reserved_amount=0)
+                balances.append(balance)
+                balance_map[(uid, tid)] = balance
+            balance.amount += amount_delta
+            balance.reserved_amount += reserved_delta
+        Balance.objects.bulk_update(balances, ['amount', 'reserved_amount'])
 
     def create_limit_order(
-            self,
-            user_id: UUID,
-            order_data: LimitOrderListBody,
-            status: str,
-            filled: int = 0,
-            closed_at: Optional[datetime] = None,
+        self,
+        user_id: UUID,
+        order_data: LimitOrderListBody,
+        status: str,
+        filled: int = 0,
+        closed_at: Optional[datetime] = None,
     ) -> Order:
         tool = Tool.objects.only("id").get(ticker=order_data.ticker)
 

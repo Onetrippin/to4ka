@@ -1,11 +1,9 @@
 from http import HTTPStatus
 from uuid import UUID
 
-from ninja import Path, Query
+from ninja import Body, Path, Query
 
-from ninja import Body
-
-from app.internal.common.response_entities import SuccessResponse, ValidationErrorResponse, ErrorDetail
+from app.internal.common.response_entities import ErrorDetail, SuccessResponse, ValidationErrorResponse
 from app.internal.domain.entities.order import CreateOrderOut, LimitOrderListBody, MarketOrderListBody
 from app.internal.domain.services.order import OrderService
 

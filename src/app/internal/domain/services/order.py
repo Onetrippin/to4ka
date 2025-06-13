@@ -87,7 +87,7 @@ class OrderService:
     def create_market_order(self, user_id: UUID, order_data: MarketOrderListBody) -> UUID:
         opposite_orders = self.order_repo.get_opposite_limit_orders_for_market(order_data.direction, order_data.ticker)
         if sum([opp['quantity'] for opp in opposite_orders]) < order_data.qty:
-            order = self.order_repo.create_market_order(
+            order_id = self.order_repo.create_market_order(
                 user_id=user_id,
                 order_data=order_data,
                 status='CANCELLED',
@@ -95,46 +95,37 @@ class OrderService:
         else:
             total_price = 0
             remaining_qty = order_data.qty
-            trades_info = {
-                'user_id': user_id,
-                'direction': order_data.direction,
-                'trades': []
-            }
+            trades_info = {'user_id': user_id, 'direction': order_data.direction, 'trades': []}
             for opp in opposite_orders:
                 available_qty = opp['quantity'] - opp['filled']
                 trade_qty = min(remaining_qty, available_qty)
-                trades_info['trades'].append({
-                    'match_order_id': opp['id'],
-                    'tool_id': opp['tool_id'],
-                    'user_id': opp['user_id'],
-                    'price': opp['price'],
-                    'quantity': trade_qty,
-                })
+                trades_info['trades'].append(
+                    {
+                        'match_order_id': opp['id'],
+                        'tool_id': opp['tool_id'],
+                        'user_id': opp['user_id'],
+                        'price': opp['price'],
+                        'quantity': trade_qty,
+                    }
+                )
                 total_price += trade_qty * opp['price']
                 remaining_qty -= trade_qty
                 if remaining_qty <= 0:
                     break
-            if order_data.direction == 'BUY' and self.balance_repo.get_balance_by_ticker(user_id) < total_price:
-                order = self.order_repo.create_market_order(
+            if (
+                order_data.direction == 'BUY'
+                and self.balance_repo.get_balance_by_ticker(user_id) < total_price
+                or order_data.direction == 'SELL'
+                and self.balance_repo.get_balance_by_ticker(user_id, order_data.ticker) < order_data.qty
+            ):
+                order_id = self.order_repo.create_market_order(
                     user_id=user_id,
                     order_data=order_data,
                     status='CANCELLED',
                 )
             else:
-
-
-
-
-        return order.id
-
-        order = self.order_repo.create_market_order(
-            user_id=user_id,
-            order_data=order_data,
-            status='EXECUTED',
-            filled=total_filled,
-            closed_at=timezone.now(),
-        )
-        return order.id
+                order_id = self.order_repo.execute_market_order(trades_info, order_data)
+        return order_id
 
     def create_limit_order(self, user_id: UUID, order_data: LimitOrderListBody) -> UUID:
         ...

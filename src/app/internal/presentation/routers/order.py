@@ -6,13 +6,13 @@ from ninja import Path, Query, Router
 
 from app.internal.common.response_entities import SuccessResponse, ValidationErrorResponse
 from app.internal.domain.entities.order import (
-    OrderBook,
-    Transaction,
     CreateOrderOut,
     LimitOrderListBody,
-    MarketOrderListBody,
     LimitOrderListOut,
-    MarketOrderListOut
+    MarketOrderListBody,
+    MarketOrderListOut,
+    OrderBook,
+    Transaction,
 )
 from app.internal.presentation.handlers.order import OrderHandlers
 

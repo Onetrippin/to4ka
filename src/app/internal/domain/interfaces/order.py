@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Literal
+from typing import Any, Dict, List, Literal, Optional
 from uuid import UUID
 
 from app.internal.data.models.order import Order
@@ -19,38 +19,34 @@ class IOrderRepository(ABC):
 
     @abstractmethod
     def create_limit_order(
-            self,
-            user_id: UUID,
-            order_data: LimitOrderListBody,
-            status: str,
-            filled: int = 0,
-            closed_at: Optional[datetime] = None,
+        self,
+        user_id: UUID,
+        order_data: LimitOrderListBody,
+        status: str,
+        filled: int = 0,
+        closed_at: Optional[datetime] = None,
     ) -> Order:
         ...
 
     @abstractmethod
     def create_market_order(
-            self,
-            user_id: UUID,
-            order_data: MarketOrderListBody,
-            status: str,
-    ) -> Order:
+        self,
+        user_id: UUID,
+        order_data: MarketOrderListBody,
+        status: str,
+    ) -> UUID:
         ...
 
     @abstractmethod
-    def execute_market_order(self, trades_info: dict) -> None:
+    def execute_market_order(self, trades_info: dict, order_data: MarketOrderListBody) -> UUID:
         ...
 
     @abstractmethod
-    def create_trade_from_match(
-            self,
-            user_id: UUID,
-            direction: Literal["BUY", "SELL"],
-            match_order_id: UUID,
-            tool_id: UUID,
-            price: float,
-            quantity: int,
-    ) -> Trade:
+    def create_trades(self, trades_info: dict) -> None:
+        ...
+
+    @abstractmethod
+    def update_balances(self, trades_info: dict) -> None:
         ...
 
     @abstractmethod
@@ -58,11 +54,15 @@ class IOrderRepository(ABC):
         ...
 
     @abstractmethod
-    def get_opposite_limit_orders_for_market(self, direction: Literal['BUY', 'SELL'], ticker: str) -> List[Dict[str, Any]]:
+    def get_opposite_limit_orders_for_market(
+        self, direction: Literal['BUY', 'SELL'], ticker: str
+    ) -> List[Dict[str, Any]]:
         ...
 
     @abstractmethod
-    def get_opposite_limit_orders_for_limit(self, direction: Literal['BUY', 'SELL'], ticker: str, price: float) -> List[Dict[str, Any]]:
+    def get_opposite_limit_orders_for_limit(
+        self, direction: Literal['BUY', 'SELL'], ticker: str, price: float
+    ) -> List[Dict[str, Any]]:
         ...
 
     @abstractmethod
