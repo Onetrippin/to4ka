@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal
 from uuid import UUID
 
-from app.internal.data.models.order import Order
-from app.internal.data.models.trade import Trade
+from django.utils import timezone
+
 from app.internal.domain.entities.order import LimitOrderListBody, MarketOrderListBody
 
 
@@ -24,8 +24,8 @@ class IOrderRepository(ABC):
         order_data: LimitOrderListBody,
         status: str,
         filled: int = 0,
-        closed_at: Optional[datetime] = None,
-    ) -> Order:
+        closed_at: datetime | None = timezone.now(),
+    ) -> UUID:
         ...
 
     @abstractmethod
@@ -42,6 +42,10 @@ class IOrderRepository(ABC):
         ...
 
     @abstractmethod
+    def execute_limit_order(self, trades_info: dict, order_data: LimitOrderListBody, status: str = None, filled: int = 0) -> UUID:
+        ...
+
+    @abstractmethod
     def create_trades(self, trades_info: dict) -> None:
         ...
 
@@ -50,18 +54,18 @@ class IOrderRepository(ABC):
         ...
 
     @abstractmethod
-    def update_order_status(self, order_id: UUID, status: str, filled: Optional[int], closed_at: Optional[datetime]):
+    def update_order_status(self, trades_info: dict) -> None:
         ...
 
     @abstractmethod
     def get_opposite_limit_orders_for_market(
-        self, direction: Literal['BUY', 'SELL'], ticker: str
+        self, direction: Literal['BUY', 'SELL'], ticker: str, user_id: UUID
     ) -> List[Dict[str, Any]]:
         ...
 
     @abstractmethod
     def get_opposite_limit_orders_for_limit(
-        self, direction: Literal['BUY', 'SELL'], ticker: str, price: float
+        self, direction: Literal['BUY', 'SELL'], ticker: str, price: int, user_id: UUID
     ) -> List[Dict[str, Any]]:
         ...
 

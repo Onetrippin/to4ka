@@ -1,9 +1,9 @@
 from datetime import datetime
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal
 from uuid import UUID
 
 from django.db import transaction
-from django.db.models import Q, Subquery
+from django.db.models import Q, Subquery, F
 from django.utils import timezone
 
 from app.internal.data.models.balance import Balance
@@ -31,17 +31,6 @@ class OrderRepository(IOrderRepository):
             )
         )
 
-    def update_order_status(
-        self, order_id: UUID, status: str, filled: Optional[int], closed_at: Optional[datetime]
-    ) -> None:
-        update_fields: Dict[str, Any] = {'status': status}
-        if filled is not None:
-            update_fields['filled'] = filled
-        if closed_at is not None:
-            update_fields['closed_at'] = closed_at
-
-        return Order.objects.filter(id=order_id).update(**update_fields)
-
     def get_order(self, user_id: UUID, order_id: UUID) -> Dict[str, Any]:
         return (
             Order.objects.filter(user_id=user_id, id=order_id)
@@ -65,20 +54,29 @@ class OrderRepository(IOrderRepository):
             status='CANCELLED',
             closed_at=timezone.now(),
         )
+        try:
+            ticker, qty, filled = Order.objects.filter(id=order_id).values_list('tool__ticker', 'quantity', 'filled').first()
+            remaining_reserved = qty - filled
+        except TypeError:
+            return
 
         if updated_order:
             Order.objects.filter(user_id=user_id, id=order_id).delete()
+            Balance.objects.filter(user_id=user_id, tool__ticker=ticker).update(
+                amount=F('amount') + remaining_reserved,
+                reserved_amount=F('reserved_amount') - remaining_reserved
+            )
 
     def get_levels_info(self, ticker: str, limit: int) -> tuple:
         statuses = ['NEW', 'PARTIALLY_EXECUTED']
 
         bid_orders = Order.objects.filter(tool__ticker=ticker, direction='BUY', status__in=statuses, type='limit')[
             :limit
-        ].values('price', 'quantity')
+        ].values('price', 'quantity', 'filled')
 
         ask_orders = Order.objects.filter(tool__ticker=ticker, direction='SELL', status__in=statuses, type='limit')[
             :limit
-        ].values('price', 'quantity')
+        ].values('price', 'quantity', 'filled')
 
         return bid_orders, ask_orders
 
@@ -86,7 +84,7 @@ class OrderRepository(IOrderRepository):
         return list(Trade.objects.filter(tool__ticker=ticker).values('tool__ticker', 'quantity', 'price', 'date'))
 
     def get_opposite_limit_orders_for_market(
-        self, direction: Literal['BUY', 'SELL'], ticker: str
+        self, direction: Literal['BUY', 'SELL'], ticker: str, user_id: UUID
     ) -> List[Dict[str, Any]]:
         return list(
             Order.objects.filter(
@@ -95,12 +93,13 @@ class OrderRepository(IOrderRepository):
                 status__in=['NEW', 'PARTIALLY_EXECUTED'],
                 type='limit',
             )
+            .exclude(user_id=user_id)
             .order_by('price' if direction == 'BUY' else '-price')
             .values('id', 'price', 'quantity', 'filled', 'tool_id', 'user_id')
         )
 
     def get_opposite_limit_orders_for_limit(
-        self, direction: Literal['BUY', 'SELL'], ticker: str, price: float
+        self, direction: Literal['BUY', 'SELL'], ticker: str, price: int, user_id: UUID
     ) -> List[Dict[str, Any]]:
         return list(
             Order.objects.filter(
@@ -110,8 +109,9 @@ class OrderRepository(IOrderRepository):
                 type='limit',
             )
             .filter(Q(price__lte=price) if direction == 'BUY' else Q(price__gte=price))
+            .exclude(user_id=user_id)
             .order_by('price' if direction == 'BUY' else '-price')
-            .values('id', 'price', 'quantity', 'filled', 'tool_id')
+            .values('id', 'price', 'quantity', 'filled', 'tool_id', 'user_id')
         )
 
     def create_market_order(
@@ -131,15 +131,70 @@ class OrderRepository(IOrderRepository):
         ).id
 
     def execute_market_order(self, trades_info: dict, order_data: MarketOrderListBody) -> UUID:
-        with transaction.atomic:
+        with transaction.atomic():
+            order_id = self.create_market_order(trades_info['user_id'], order_data, 'EXECUTED')
+            trades_info['order_id'] = order_id
             self.create_trades(trades_info=trades_info)
             self.update_balances(trades_info=trades_info)
-            return self.create_market_order(trades_info['user_id'], order_data, 'EXECUTED')
+            self.update_order_status(trades_info=trades_info)
+            return order_id
+
+    def execute_limit_order(self, trades_info: dict, order_data: LimitOrderListBody, status: str = None, filled: int = 0) -> UUID:
+        with transaction.atomic():
+            if trades_info['trades']:
+                order_id = self.create_limit_order(
+                    trades_info['user_id'],
+                    order_data,
+                    status,
+                    filled,
+                    timezone.now() if status == 'EXECUTED' else None
+                )
+                trades_info['order_id'] = order_id
+                self.create_trades(trades_info=trades_info)
+                self.update_balances(trades_info=trades_info)
+                self.update_order_status(trades_info=trades_info)
+                return order_id
+            else:
+                if order_data.direction == 'BUY':
+                    ticker = 'RUB'
+                    amount = order_data.price * order_data.qty
+                else:
+                    ticker = order_data.ticker
+                    amount = order_data.qty
+                Balance.objects.filter(user_id=trades_info['user_id'], tool__ticker=ticker).update(
+                    amount=F('amount') - amount,
+                    reserved_amount=F('reserved_amount') + amount
+                )
+                return self.create_limit_order(trades_info['user_id'], order_data, 'NEW', closed_at=None)
+
+    def update_order_status(self, trades_info: dict) -> None:
+        orders_info = []
+        for trade in trades_info['trades']:
+            filled = trade['init_filled'] + trade['quantity']
+            status = 'EXECUTED' if trade['init_quantity'] == filled else 'PARTIALLY_EXECUTED'
+            orders_info.append({
+                'order_id': trade['match_order_id'],
+                'filled': filled,
+                'status': status,
+                'closed_at': timezone.now() if status == 'EXECUTED' else None
+            })
+        orders = list(Order.objects.filter(id__in=[trade['match_order_id'] for trade in trades_info['trades']]))
+        order_map = {order.id: order for order in orders}
+        for order_info in orders_info:
+            order = order_map.get(order_info['order_id'])
+            if order:
+                order.filled = order_info['filled']
+                order.status = order_info['status']
+                order.closed_at = order_info['closed_at']
+
+        Order.objects.bulk_update(orders, ['filled', 'status', 'closed_at'])
 
     def create_trades(self, trades_info: dict) -> None:
         Trade.objects.bulk_create(
             [
                 Trade(
+                    bid_id=trades_info['order_id'] if trades_info['direction'] == 'BUY' else trade['match_order_id'],
+                    ask_id=trade['match_order_id'] if trades_info['direction'] == 'BUY' else trades_info['order_id'],
                     buyer_id=trades_info['user_id'] if trades_info['direction'] == 'BUY' else trade['user_id'],
                     seller_id=trade['user_id'] if trades_info['direction'] == 'BUY' else trades_info['user_id'],
                     tool_id=trade['tool_id'],
@@ -173,25 +228,26 @@ class OrderRepository(IOrderRepository):
         if net_tool_change != 0:
             tool_id = trades_info['trades'][0]['tool_id']
             deltas.setdefault((trades_info['user_id'], tool_id), [0, 0])[0] += net_tool_change
-        keys = list(deltas.keys())
-        user_ids = list({uid for uid, _ in keys})
-        tool_ids = list({tid for _, tid in keys})
-        balances = list(
-            Balance.objects.filter(
-                user_id__in=user_ids,
-                tool_id__in=tool_ids,
-            )
-        )
+        q_objects = Q()
+        for (uid, tid) in deltas:
+            q_objects |= Q(user_id=uid, tool_id=tid)
+        balances = list(Balance.objects.filter(q_objects))
         balance_map = {(b.user_id, b.tool_id): b for b in balances}
+        existing_balances = []
+        new_balances = []
         for (uid, tid), (amount_delta, reserved_delta) in deltas.items():
             balance = balance_map.get((uid, tid))
             if not balance:
                 balance = Balance(user_id=uid, tool_id=tid, amount=0, reserved_amount=0)
-                balances.append(balance)
+                new_balances.append(balance)
                 balance_map[(uid, tid)] = balance
+            else:
+                existing_balances.append(balance)
             balance.amount += amount_delta
             balance.reserved_amount += reserved_delta
-        Balance.objects.bulk_update(balances, ['amount', 'reserved_amount'])
+        if new_balances:
+            Balance.objects.bulk_create(new_balances)
+        Balance.objects.bulk_update(existing_balances + new_balances, ['amount', 'reserved_amount'])
 
     def create_limit_order(
         self,
@@ -199,18 +255,16 @@ class OrderRepository(IOrderRepository):
         order_data: LimitOrderListBody,
         status: str,
         filled: int = 0,
-        closed_at: Optional[datetime] = None,
-    ) -> Order:
-        tool = Tool.objects.only("id").get(ticker=order_data.ticker)
-
+        closed_at: datetime | None = timezone.now(),
+    ) -> UUID:
         return Order.objects.create(
             user_id=user_id,
-            tool_id=tool.id,
+            tool_id=Subquery(Tool.objects.filter(ticker=order_data.ticker).values('id')[:1]),
             direction=order_data.direction,
-            type="limit",
+            type='limit',
             price=order_data.price,
             quantity=order_data.qty,
             status=status,
             filled=filled,
             closed_at=closed_at,
-        )
+        ).id
