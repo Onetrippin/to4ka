@@ -12,7 +12,10 @@ class InstrumentRepository(IInstrumentRepository):
             tool, created = Tool.objects.get_or_create(ticker=ticker, name=name)
             if created:
                 Balance.objects.bulk_create(
-                    [Balance(user_id=user, tool_id=tool.id, amount=0) for user in User.objects.values_list('id', flat=True)]
+                    [
+                        Balance(user_id=user, tool_id=tool.id, amount=0)
+                        for user in User.objects.values_list('id', flat=True)
+                    ]
                 )
                 return True
         except IntegrityError:

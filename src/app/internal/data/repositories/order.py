@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Literal
 from uuid import UUID
 
-from django.db import transaction, IntegrityError
+from django.db import IntegrityError, transaction
 from django.db.models import F, Q, Subquery
 from django.utils import timezone
 

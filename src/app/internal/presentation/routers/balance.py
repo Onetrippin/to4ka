@@ -23,7 +23,7 @@ def get_balance_router(balance_handlers: BalanceHandlers) -> Router:
         response={
             HTTPStatus.OK: SuccessResponse,
             HTTPStatus.FORBIDDEN: ErrorResponse,
-            HTTPStatus.BAD_REQUEST: ErrorResponse
+            HTTPStatus.BAD_REQUEST: ErrorResponse,
         },
         summary='Deposit',
     )
@@ -35,7 +35,7 @@ def get_balance_router(balance_handlers: BalanceHandlers) -> Router:
         response={
             HTTPStatus.OK: SuccessResponse,
             HTTPStatus.FORBIDDEN: ErrorResponse,
-            HTTPStatus.BAD_REQUEST: ErrorResponse
+            HTTPStatus.BAD_REQUEST: ErrorResponse,
         },
         summary='Withdraw',
     )
