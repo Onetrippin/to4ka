@@ -4,7 +4,7 @@ from uuid import UUID
 
 class IUserRepository(ABC):
     @abstractmethod
-    def create(self, name: str, token_encrypted: str, token_hash: str) -> dict:
+    def create(self, name: str, token_encrypted: str, token_hash: str) -> dict | None:
         ...
 
     @abstractmethod

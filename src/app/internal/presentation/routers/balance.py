@@ -20,7 +20,11 @@ def get_balance_router(balance_handlers: BalanceHandlers) -> Router:
 
     @router.post(
         '/admin/balance/deposit',
-        response={HTTPStatus.OK: SuccessResponse, HTTPStatus.FORBIDDEN: ErrorResponse},
+        response={
+            HTTPStatus.OK: SuccessResponse,
+            HTTPStatus.FORBIDDEN: ErrorResponse,
+            HTTPStatus.BAD_REQUEST: ErrorResponse
+        },
         summary='Deposit',
     )
     def make_deposit(request, deposit_data: Deposit = Body(...)):
@@ -28,7 +32,11 @@ def get_balance_router(balance_handlers: BalanceHandlers) -> Router:
 
     @router.post(
         '/admin/balance/withdraw',
-        response={HTTPStatus.OK: SuccessResponse, HTTPStatus.FORBIDDEN: ErrorResponse},
+        response={
+            HTTPStatus.OK: SuccessResponse,
+            HTTPStatus.FORBIDDEN: ErrorResponse,
+            HTTPStatus.BAD_REQUEST: ErrorResponse
+        },
         summary='Withdraw',
     )
     def make_withdraw(request, withdraw_data: Withdraw = Body(...)):

@@ -25,7 +25,7 @@ class IOrderRepository(ABC):
         status: str,
         filled: int = 0,
         closed_at: datetime | None = timezone.now(),
-    ) -> UUID:
+    ) -> UUID | None:
         ...
 
     @abstractmethod
@@ -34,17 +34,17 @@ class IOrderRepository(ABC):
         user_id: UUID,
         order_data: MarketOrderListBody,
         status: str,
-    ) -> UUID:
+    ) -> UUID | None:
         ...
 
     @abstractmethod
-    def execute_market_order(self, trades_info: dict, order_data: MarketOrderListBody) -> UUID:
+    def execute_market_order(self, trades_info: dict, order_data: MarketOrderListBody) -> UUID | None:
         ...
 
     @abstractmethod
     def execute_limit_order(
         self, trades_info: dict, order_data: LimitOrderListBody, status: str = None, filled: int = 0
-    ) -> UUID:
+    ) -> UUID | None:
         ...
 
     @abstractmethod

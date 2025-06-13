@@ -2,7 +2,7 @@ from http import HTTPStatus
 
 from ninja import Body, Path, Router
 
-from app.internal.common.response_entities import ErrorResponse, SuccessResponse, ValidationErrorResponse
+from app.internal.common.response_entities import ErrorResponse, SuccessResponse
 from app.internal.domain.entities.instrument import Instrument
 from app.internal.presentation.handlers.instrument import InstrumentHandlers
 
@@ -15,7 +15,7 @@ def get_inst_router(inst_handlers: InstrumentHandlers) -> Router:
         response={
             HTTPStatus.OK: SuccessResponse,
             HTTPStatus.FORBIDDEN: ErrorResponse,
-            HTTPStatus.UNPROCESSABLE_ENTITY: ValidationErrorResponse,
+            HTTPStatus.BAD_REQUEST: ErrorResponse,
         },
         summary='Add Instrument',
     )
@@ -27,7 +27,7 @@ def get_inst_router(inst_handlers: InstrumentHandlers) -> Router:
         response={
             HTTPStatus.OK: SuccessResponse,
             HTTPStatus.FORBIDDEN: ErrorResponse,
-            HTTPStatus.UNPROCESSABLE_ENTITY: ValidationErrorResponse,
+            HTTPStatus.BAD_REQUEST: ErrorResponse,
         },
         summary='Delete Instrument',
     )

@@ -13,7 +13,7 @@ def get_users_router(user_handlers: UserHandlers) -> Router:
 
     @router.post(
         '/public/register',
-        response={HTTPStatus.OK: UserOut},
+        response={HTTPStatus.OK: UserOut, HTTPStatus.BAD_REQUEST: ErrorResponse},
         summary='Register',
         auth=None,
     )
@@ -22,7 +22,7 @@ def get_users_router(user_handlers: UserHandlers) -> Router:
 
     @router.delete(
         '/admin/user/{user_id}',
-        response={HTTPStatus.OK: UserOut, HTTPStatus.FORBIDDEN: ErrorResponse},
+        response={HTTPStatus.OK: UserOut, HTTPStatus.FORBIDDEN: ErrorResponse, HTTPStatus.BAD_REQUEST: ErrorResponse},
         summary='Delete User',
     )
     def delete(request, user_id: UUID = Path(...)):

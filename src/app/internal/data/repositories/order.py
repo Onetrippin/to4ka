@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Literal
 from uuid import UUID
 
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from django.db.models import F, Q, Subquery
 from django.utils import timezone
 
@@ -136,20 +136,25 @@ class OrderRepository(IOrderRepository):
         user_id: UUID,
         order_data: MarketOrderListBody,
         status: str,
-    ) -> UUID:
-        return Order.objects.create(
-            user_id=user_id,
-            tool_id=Subquery(Tool.objects.filter(ticker=order_data.ticker).values('id')[:1]),
-            direction=order_data.direction,
-            type='market',
-            quantity=order_data.qty,
-            status=status,
-            closed_at=timezone.now(),
-        ).id
+    ) -> UUID | None:
+        try:
+            return Order.objects.create(
+                user_id=user_id,
+                tool_id=Subquery(Tool.objects.filter(ticker=order_data.ticker).values('id')[:1]),
+                direction=order_data.direction,
+                type='market',
+                quantity=order_data.qty,
+                status=status,
+                closed_at=timezone.now(),
+            ).id
+        except IntegrityError:
+            return
 
-    def execute_market_order(self, trades_info: dict, order_data: MarketOrderListBody) -> UUID:
+    def execute_market_order(self, trades_info: dict, order_data: MarketOrderListBody) -> UUID | None:
         with transaction.atomic():
             order_id = self.create_market_order(trades_info['user_id'], order_data, 'EXECUTED')
+            if not order_id:
+                return
             trades_info['order_id'] = order_id
             self.create_trades(trades_info=trades_info)
             self.update_balances(trades_info=trades_info)
@@ -158,12 +163,14 @@ class OrderRepository(IOrderRepository):
 
     def execute_limit_order(
         self, trades_info: dict, order_data: LimitOrderListBody, status: str = None, filled: int = 0
-    ) -> UUID:
+    ) -> UUID | None:
         with transaction.atomic():
             if trades_info['trades']:
                 order_id = self.create_limit_order(
                     trades_info['user_id'], order_data, status, filled, timezone.now() if status == 'EXECUTED' else None
                 )
+                if not order_id:
+                    return
                 trades_info['order_id'] = order_id
                 self.create_trades(trades_info=trades_info)
                 self.update_balances(trades_info=trades_info)
@@ -179,7 +186,10 @@ class OrderRepository(IOrderRepository):
                 Balance.objects.filter(user_id=trades_info['user_id'], tool__ticker=ticker).update(
                     amount=F('amount') - amount, reserved_amount=F('reserved_amount') + amount
                 )
-                return self.create_limit_order(trades_info['user_id'], order_data, 'NEW', closed_at=None)
+                order_id = self.create_limit_order(trades_info['user_id'], order_data, 'NEW', closed_at=None)
+                if order_id:
+                    return order_id
+                return
 
     def update_order_status(self, trades_info: dict) -> None:
         orders_info = []
@@ -272,15 +282,18 @@ class OrderRepository(IOrderRepository):
         status: str,
         filled: int = 0,
         closed_at: datetime | None = timezone.now(),
-    ) -> UUID:
-        return Order.objects.create(
-            user_id=user_id,
-            tool_id=Subquery(Tool.objects.filter(ticker=order_data.ticker).values('id')[:1]),
-            direction=order_data.direction,
-            type='limit',
-            price=order_data.price,
-            quantity=order_data.qty,
-            status=status,
-            filled=filled,
-            closed_at=closed_at,
-        ).id
+    ) -> UUID | None:
+        try:
+            return Order.objects.create(
+                user_id=user_id,
+                tool_id=Subquery(Tool.objects.filter(ticker=order_data.ticker).values('id')[:1]),
+                direction=order_data.direction,
+                type='limit',
+                price=order_data.price,
+                quantity=order_data.qty,
+                status=status,
+                filled=filled,
+                closed_at=closed_at,
+            ).id
+        except IntegrityError:
+            return

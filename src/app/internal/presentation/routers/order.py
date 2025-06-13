@@ -4,7 +4,7 @@ from uuid import UUID
 
 from ninja import Path, Query, Router
 
-from app.internal.common.response_entities import SuccessResponse, ValidationErrorResponse
+from app.internal.common.response_entities import ErrorResponse, SuccessResponse
 from app.internal.domain.entities.order import (
     CreateOrderOut,
     LimitOrderListBody,
@@ -38,7 +38,7 @@ def get_orders_routers(order_handlers: OrderHandlers) -> Router:
 
     @router.delete(
         '/order/{order_id}',
-        response={HTTPStatus.OK: SuccessResponse, HTTPStatus.UNPROCESSABLE_ENTITY: ValidationErrorResponse},
+        response={HTTPStatus.OK: SuccessResponse, HTTPStatus.BAD_REQUEST: ErrorResponse},
         summary='Cancel Order',
     )
     def cancel_order(request, order_id: UUID = Path(...)):
@@ -64,7 +64,7 @@ def get_orders_routers(order_handlers: OrderHandlers) -> Router:
 
     @router.post(
         '/order',
-        response={HTTPStatus.OK: CreateOrderOut, HTTPStatus.UNPROCESSABLE_ENTITY: ValidationErrorResponse},
+        response={HTTPStatus.OK: CreateOrderOut, HTTPStatus.BAD_REQUEST: ErrorResponse},
         summary='Create Order',
     )
     def create_order(request, order_data: LimitOrderListBody | MarketOrderListBody):

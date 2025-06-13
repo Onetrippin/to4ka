@@ -11,7 +11,7 @@ class InstrumentService:
             if self.inst_repo.add(name=inst_data.name, ticker=inst_data.ticker):
                 return True
             return False
-        return None
+        return
 
     def delete(self, ticker: str, user_role: str) -> bool | None:
         if user_role == 'ADMIN':

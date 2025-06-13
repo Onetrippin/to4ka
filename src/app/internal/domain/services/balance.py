@@ -16,18 +16,20 @@ class BalanceService:
             }
         )
 
-    def make_deposit(self, deposit_data: Deposit, user_role: str) -> bool:
+    def make_deposit(self, deposit_data: Deposit, user_role: str) -> bool | None:
         if user_role == 'ADMIN':
-            self.balance_repo.make_deposit(
+            if self.balance_repo.make_deposit(
                 user_id=deposit_data.user_id, ticker=deposit_data.ticker, amount=deposit_data.amount
-            )
-            return True
-        return False
+            ):
+                return True
+            return False
+        return
 
-    def make_withdraw(self, withdraw_data: Withdraw, user_role: str) -> bool:
+    def make_withdraw(self, withdraw_data: Withdraw, user_role: str) -> bool | None:
         if user_role == 'ADMIN':
-            self.balance_repo.make_withdraw(
+            if self.balance_repo.make_withdraw(
                 user_id=withdraw_data.user_id, ticker=withdraw_data.ticker, amount=withdraw_data.amount
-            )
-            return True
-        return False
+            ):
+                return True
+            return False
+        return
