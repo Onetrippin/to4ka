@@ -38,7 +38,8 @@ def get_orders_routers(order_handlers: OrderHandlers) -> Router:
 
     @router.delete(
         '/order/{order_id}',
-        response={HTTPStatus.OK: SuccessResponse, HTTPStatus.BAD_REQUEST: ErrorResponse},
+        # response={HTTPStatus.OK: SuccessResponse, HTTPStatus.BAD_REQUEST: ErrorResponse},
+        response={HTTPStatus.OK: SuccessResponse},
         summary='Cancel Order',
     )
     def cancel_order(request, order_id: UUID = Path(...)):
@@ -64,7 +65,8 @@ def get_orders_routers(order_handlers: OrderHandlers) -> Router:
 
     @router.post(
         '/order',
-        response={HTTPStatus.OK: CreateOrderOut, HTTPStatus.BAD_REQUEST: ErrorResponse},
+        # response={HTTPStatus.OK: CreateOrderOut, HTTPStatus.BAD_REQUEST: ErrorResponse},
+        response={HTTPStatus.OK: CreateOrderOut},
         summary='Create Order',
     )
     def create_order(request, order_data: LimitOrderListBody | MarketOrderListBody):
