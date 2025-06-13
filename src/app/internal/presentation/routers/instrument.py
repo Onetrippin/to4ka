@@ -15,7 +15,7 @@ def get_inst_router(inst_handlers: InstrumentHandlers) -> Router:
         response={
             HTTPStatus.OK: SuccessResponse,
             HTTPStatus.FORBIDDEN: ErrorResponse,
-            HTTPStatus.UNPROCESSABLE_ENTITY: ValidationErrorResponse
+            HTTPStatus.UNPROCESSABLE_ENTITY: ValidationErrorResponse,
         },
         summary='Add Instrument',
     )
