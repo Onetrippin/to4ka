@@ -49,24 +49,35 @@ class OrderRepository(IOrderRepository):
             .first()
         )
 
-    def cancel_order(self, user_id: UUID, order_id: UUID) -> None:
+    def cancel_order(self, user_id: UUID, order_id: UUID) -> bool:
         updated_order = Order.objects.filter(user_id=user_id, id=order_id).update(
             status='CANCELLED',
             closed_at=timezone.now(),
         )
         try:
-            ticker, qty, filled = (
-                Order.objects.filter(id=order_id).values_list('tool__ticker', 'quantity', 'filled').first()
+            ticker, qty, filled, direction, price = (
+                Order.objects.filter(id=order_id).values_list(
+                    'tool__ticker',
+                    'quantity',
+                    'filled',
+                    'direction',
+                    'price',
+                ).first()
             )
             remaining_reserved = qty - filled
         except TypeError:
-            return
+            return False
 
         if updated_order:
             Order.objects.filter(user_id=user_id, id=order_id).delete()
+            if direction == 'BUY':
+                ticker = 'RUB'
+                remaining_reserved = remaining_reserved * price
             Balance.objects.filter(user_id=user_id, tool__ticker=ticker).update(
                 amount=F('amount') + remaining_reserved, reserved_amount=F('reserved_amount') - remaining_reserved
             )
+        else:
+            return False
 
     def get_levels_info(self, ticker: str, limit: int) -> tuple:
         statuses = ['NEW', 'PARTIALLY_EXECUTED']

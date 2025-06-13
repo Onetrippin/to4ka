@@ -57,7 +57,7 @@ class OrderService:
 
         return self._build_order_out(raw_order)
 
-    def cancel_order(self, user_id: UUID, order_id: UUID) -> None:
+    def cancel_order(self, user_id: UUID, order_id: UUID) -> bool:
         return self.order_repo.cancel_order(user_id, order_id)
 
     def get_orderbook(self, ticker: str, limit: int) -> OrderBook:

@@ -72,7 +72,7 @@ class IOrderRepository(ABC):
         ...
 
     @abstractmethod
-    def cancel_order(self, user_id: UUID, order_id: UUID) -> None:
+    def cancel_order(self, user_id: UUID, order_id: UUID) -> bool:
         ...
 
     @abstractmethod

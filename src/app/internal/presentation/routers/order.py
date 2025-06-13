@@ -38,7 +38,7 @@ def get_orders_routers(order_handlers: OrderHandlers) -> Router:
 
     @router.delete(
         '/order/{order_id}',
-        response={HTTPStatus.OK: SuccessResponse},
+        response={HTTPStatus.OK: SuccessResponse, HTTPStatus.UNPROCESSABLE_ENTITY: ValidationErrorResponse},
         summary='Cancel Order',
     )
     def cancel_order(request, order_id: UUID = Path(...)):
