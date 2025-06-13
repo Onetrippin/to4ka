@@ -8,9 +8,13 @@ class IBalanceRepository(ABC):
         ...
 
     @abstractmethod
-    def make_deposit(self, user_id: str, ticker: str, amount: int) -> None:
+    def make_deposit(self, user_id: UUID, ticker: str, amount: int) -> None:
         ...
 
     @abstractmethod
-    def make_withdraw(self, user_id: str, ticker: str, amount: int) -> None:
+    def make_withdraw(self, user_id: UUID, ticker: str, amount: int) -> None:
+        ...
+
+    @abstractmethod
+    def get_balance_by_ticker(self, user_id: UUID, ticker: str = 'RUB') -> int:
         ...

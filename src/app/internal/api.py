@@ -23,8 +23,14 @@ from app.internal.presentation.routers.user import get_users_router
 def get_api():
     api = NinjaAPI(title='To4ka API', version='1.0.0', auth=[ApiKeyAuth()])
 
+    balance_repo = BalanceRepository()
+    balance_service = BalanceService(balance_repo=balance_repo)
+    balance_handlers = BalanceHandlers(balance_service=balance_service)
+    balance_router = get_balance_router(balance_handlers)
+    api.add_router('', balance_router)
+
     order_repo = OrderRepository()
-    order_service = OrderService(order_repo=order_repo)
+    order_service = OrderService(order_repo=order_repo, balance_repo=balance_repo)
     order_handlers = OrderHandlers(order_service=order_service)
     order_router = get_orders_routers(order_handlers)
     api.add_router('', order_router)
@@ -41,12 +47,6 @@ def get_api():
     inst_handlers = InstrumentHandlers(inst_service=inst_service)
     inst_router = get_inst_router(inst_handlers)
     api.add_router('', inst_router)
-
-    balance_repo = BalanceRepository()
-    balance_service = BalanceService(balance_repo=balance_repo)
-    balance_handlers = BalanceHandlers(balance_service=balance_service)
-    balance_router = get_balance_router(balance_handlers)
-    api.add_router('', balance_router)
 
     return api
 

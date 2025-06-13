@@ -8,6 +8,7 @@ class Balance(models.Model):
     user = models.ForeignKey(User, models.CASCADE, related_name='balances')
     tool = models.ForeignKey(Tool, models.CASCADE, related_name='balances')
     amount = models.IntegerField(default=0)
+    reserved_amount = models.IntegerField(default=0)
 
     objects = models.Manager()
 

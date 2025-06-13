@@ -4,6 +4,7 @@ from uuid import UUID
 from ninja import Path, Query
 
 from app.internal.common.response_entities import SuccessResponse
+from app.internal.domain.entities.order import CreateOrderOut, LimitOrderListBody, MarketOrderListBody
 from app.internal.domain.services.order import OrderService
 
 
@@ -31,3 +32,12 @@ class OrderHandlers:
 
     def get_trans_history(self, request, ticker: str = Path(...), limit: int = Query(10)):
         return HTTPStatus.OK, self.order_service.get_trans_history(ticker, limit)
+
+    def create_order(self, request, order_data: LimitOrderListBody | MarketOrderListBody):
+        user_id = request.user_id
+        if isinstance(order_data, LimitOrderListBody):
+            order_id = self.order_service.create_limit_order(user_id, order_data)
+        else:
+            order_id = self.order_service.create_market_order(user_id, order_data)
+
+        return CreateOrderOut(order_id=order_id)
