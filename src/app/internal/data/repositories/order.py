@@ -82,7 +82,7 @@ class OrderRepository(IOrderRepository):
         return bid_orders, ask_orders
 
     def get_trans_list(self, ticker: str, limit: int) -> list:
-        return list(Trade.objects.filter(tool__ticker=ticker).values('tool__ticker', 'quantity', 'price', 'date'))
+        return list(Trade.objects.filter(tool__ticker=ticker)[:limit].values('tool__ticker', 'quantity', 'price', 'date'))
 
     def get_opposite_limit_orders_for_market(
         self, direction: Literal['BUY', 'SELL'], ticker: str, user_id: UUID
