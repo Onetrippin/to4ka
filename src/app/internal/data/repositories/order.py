@@ -56,13 +56,15 @@ class OrderRepository(IOrderRepository):
         )
         try:
             ticker, qty, filled, direction, price = (
-                Order.objects.filter(id=order_id).values_list(
+                Order.objects.filter(id=order_id)
+                .values_list(
                     'tool__ticker',
                     'quantity',
                     'filled',
                     'direction',
                     'price',
-                ).first()
+                )
+                .first()
             )
             remaining_reserved = qty - filled
         except TypeError:

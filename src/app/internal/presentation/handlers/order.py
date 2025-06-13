@@ -3,7 +3,7 @@ from uuid import UUID
 
 from ninja import Path, Query
 
-from app.internal.common.response_entities import SuccessResponse, ValidationErrorResponse, ErrorDetail
+from app.internal.common.response_entities import ErrorDetail, SuccessResponse, ValidationErrorResponse
 from app.internal.domain.entities.order import CreateOrderOut, LimitOrderListBody, MarketOrderListBody
 from app.internal.domain.services.order import OrderService
 
@@ -27,8 +27,8 @@ class OrderHandlers:
         if self.order_service.cancel_order(user_id, order_id):
             return HTTPStatus.OK, SuccessResponse
         return HTTPStatus.UNPROCESSABLE_ENTITY, ValidationErrorResponse(
-                detail=[ErrorDetail(loc=['body', 0], msg='Invalid value', type='value_error')]
-            )
+            detail=[ErrorDetail(loc=['body', 0], msg='Invalid value', type='value_error')]
+        )
 
     def get_orderbook(self, request, ticker: str = Path(...), limit: int = Query(10)):
         return HTTPStatus.OK, self.order_service.get_orderbook(ticker, limit)
