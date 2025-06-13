@@ -75,18 +75,19 @@ class OrderService:
             for trans in self.order_repo.get_trans_list(ticker, limit)
         ]
 
-    def create_market_order(self, user_id: UUID, order_data: MarketOrderListBody) -> UUID:
+    def create_market_order(self, user_id: UUID, order_data: MarketOrderListBody) -> UUID | None:
         opposite_orders = self.order_repo.get_opposite_limit_orders_for_market(
             order_data.direction,
             order_data.ticker,
             user_id,
         )
         if sum([opp['quantity'] for opp in opposite_orders]) < order_data.qty:
-            order_id = self.order_repo.create_market_order(
+            self.order_repo.create_market_order(
                 user_id=user_id,
                 order_data=order_data,
                 status='CANCELLED',
             )
+            return
         else:
             total_price = 0
             remaining_qty = order_data.qty
@@ -111,20 +112,19 @@ class OrderService:
                     break
             if (
                 order_data.direction == 'BUY'
-                and self.balance_repo.get_balance_by_ticker(user_id) < total_price
+                and (not total_price or self.balance_repo.get_balance_by_ticker(user_id) < total_price)
                 or order_data.direction == 'SELL'
                 and self.balance_repo.get_balance_by_ticker(user_id, order_data.ticker) < order_data.qty
             ):
-                order_id = self.order_repo.create_market_order(
+                self.order_repo.create_market_order(
                     user_id=user_id,
                     order_data=order_data,
                     status='CANCELLED',
                 )
-            else:
-                order_id = self.order_repo.execute_market_order(trades_info, order_data)
-        return order_id
+                return
+            return self.order_repo.execute_market_order(trades_info, order_data)
 
-    def create_limit_order(self, user_id: UUID, order_data: LimitOrderListBody) -> UUID:
+    def create_limit_order(self, user_id: UUID, order_data: LimitOrderListBody) -> UUID | None:
         opposite_orders = self.order_repo.get_opposite_limit_orders_for_limit(
             order_data.direction, order_data.ticker, order_data.price, user_id
         )
@@ -152,27 +152,24 @@ class OrderService:
 
         if (
             order_data.direction == 'BUY'
-            and self.balance_repo.get_balance_by_ticker(user_id) < total_price
+            and (not total_price or self.balance_repo.get_balance_by_ticker(user_id) < total_price)
             or order_data.direction == 'SELL'
             and self.balance_repo.get_balance_by_ticker(user_id, order_data.ticker) < order_data.qty
         ):
-            order_id = self.order_repo.create_limit_order(
+            self.order_repo.create_limit_order(
                 user_id=user_id,
                 order_data=order_data,
                 status='CANCELLED',
             )
-
+            return
         elif remaining_qty == order_data.qty:
             order_id = self.order_repo.execute_limit_order(trades_info, order_data)
-
         elif remaining_qty <= 0:
             order_id = self.order_repo.execute_limit_order(
                 trades_info, order_data, 'EXECUTED', order_data.qty - remaining_qty
             )
-
         else:
             order_id = self.order_repo.execute_limit_order(
                 trades_info, order_data, 'PARTIALLY_EXECUTED', order_data.qty
             )
-
         return order_id

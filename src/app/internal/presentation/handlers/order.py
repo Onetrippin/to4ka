@@ -42,5 +42,8 @@ class OrderHandlers:
             order_id = self.order_service.create_limit_order(user_id, order_data)
         else:
             order_id = self.order_service.create_market_order(user_id, order_data)
-
-        return CreateOrderOut(order_id=order_id)
+        if not order_id:
+            return HTTPStatus.UNPROCESSABLE_ENTITY, ValidationErrorResponse(
+                detail=[ErrorDetail(loc=['body', 0], msg='Invalid value', type='value_error')]
+            )
+        return HTTPStatus.OK, CreateOrderOut(order_id=order_id)

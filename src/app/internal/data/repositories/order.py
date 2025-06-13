@@ -50,7 +50,9 @@ class OrderRepository(IOrderRepository):
         )
 
     def cancel_order(self, user_id: UUID, order_id: UUID) -> bool:
-        updated_order = Order.objects.filter(user_id=user_id, id=order_id).update(
+        updated_order = Order.objects.filter(
+            user_id=user_id, id=order_id, status__in=['NEW', 'PARTIALLY_EXECUTED']
+        ).update(
             status='CANCELLED',
             closed_at=timezone.now(),
         )
@@ -71,15 +73,14 @@ class OrderRepository(IOrderRepository):
             return False
 
         if updated_order:
-            Order.objects.filter(user_id=user_id, id=order_id).delete()
             if direction == 'BUY':
                 ticker = 'RUB'
                 remaining_reserved = remaining_reserved * price
             Balance.objects.filter(user_id=user_id, tool__ticker=ticker).update(
                 amount=F('amount') + remaining_reserved, reserved_amount=F('reserved_amount') - remaining_reserved
             )
-        else:
-            return False
+            return True
+        return False
 
     def get_levels_info(self, ticker: str, limit: int) -> tuple:
         statuses = ['NEW', 'PARTIALLY_EXECUTED']
