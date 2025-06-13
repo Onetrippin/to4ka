@@ -42,7 +42,9 @@ class IOrderRepository(ABC):
         ...
 
     @abstractmethod
-    def execute_limit_order(self, trades_info: dict, order_data: LimitOrderListBody, status: str = None, filled: int = 0) -> UUID:
+    def execute_limit_order(
+        self, trades_info: dict, order_data: LimitOrderListBody, status: str = None, filled: int = 0
+    ) -> UUID:
         ...
 
     @abstractmethod

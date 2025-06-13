@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Literal
 from uuid import UUID
 
 from django.db import transaction
-from django.db.models import Q, Subquery, F
+from django.db.models import F, Q, Subquery
 from django.utils import timezone
 
 from app.internal.data.models.balance import Balance
@@ -55,7 +55,9 @@ class OrderRepository(IOrderRepository):
             closed_at=timezone.now(),
         )
         try:
-            ticker, qty, filled = Order.objects.filter(id=order_id).values_list('tool__ticker', 'quantity', 'filled').first()
+            ticker, qty, filled = (
+                Order.objects.filter(id=order_id).values_list('tool__ticker', 'quantity', 'filled').first()
+            )
             remaining_reserved = qty - filled
         except TypeError:
             return
@@ -63,8 +65,7 @@ class OrderRepository(IOrderRepository):
         if updated_order:
             Order.objects.filter(user_id=user_id, id=order_id).delete()
             Balance.objects.filter(user_id=user_id, tool__ticker=ticker).update(
-                amount=F('amount') + remaining_reserved,
-                reserved_amount=F('reserved_amount') - remaining_reserved
+                amount=F('amount') + remaining_reserved, reserved_amount=F('reserved_amount') - remaining_reserved
             )
 
     def get_levels_info(self, ticker: str, limit: int) -> tuple:
@@ -139,15 +140,13 @@ class OrderRepository(IOrderRepository):
             self.update_order_status(trades_info=trades_info)
             return order_id
 
-    def execute_limit_order(self, trades_info: dict, order_data: LimitOrderListBody, status: str = None, filled: int = 0) -> UUID:
+    def execute_limit_order(
+        self, trades_info: dict, order_data: LimitOrderListBody, status: str = None, filled: int = 0
+    ) -> UUID:
         with transaction.atomic():
             if trades_info['trades']:
                 order_id = self.create_limit_order(
-                    trades_info['user_id'],
-                    order_data,
-                    status,
-                    filled,
-                    timezone.now() if status == 'EXECUTED' else None
+                    trades_info['user_id'], order_data, status, filled, timezone.now() if status == 'EXECUTED' else None
                 )
                 trades_info['order_id'] = order_id
                 self.create_trades(trades_info=trades_info)
@@ -162,8 +161,7 @@ class OrderRepository(IOrderRepository):
                     ticker = order_data.ticker
                     amount = order_data.qty
                 Balance.objects.filter(user_id=trades_info['user_id'], tool__ticker=ticker).update(
-                    amount=F('amount') - amount,
-                    reserved_amount=F('reserved_amount') + amount
+                    amount=F('amount') - amount, reserved_amount=F('reserved_amount') + amount
                 )
                 return self.create_limit_order(trades_info['user_id'], order_data, 'NEW', closed_at=None)
 
@@ -172,12 +170,14 @@ class OrderRepository(IOrderRepository):
         for trade in trades_info['trades']:
             filled = trade['init_filled'] + trade['quantity']
             status = 'EXECUTED' if trade['init_quantity'] == filled else 'PARTIALLY_EXECUTED'
-            orders_info.append({
-                'order_id': trade['match_order_id'],
-                'filled': filled,
-                'status': status,
-                'closed_at': timezone.now() if status == 'EXECUTED' else None
-            })
+            orders_info.append(
+                {
+                    'order_id': trade['match_order_id'],
+                    'filled': filled,
+                    'status': status,
+                    'closed_at': timezone.now() if status == 'EXECUTED' else None,
+                }
+            )
         orders = list(Order.objects.filter(id__in=[trade['match_order_id'] for trade in trades_info['trades']]))
         order_map = {order.id: order for order in orders}
         for order_info in orders_info:
