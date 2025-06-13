@@ -5,12 +5,14 @@ from app.internal.domain.interfaces.instrument import IInstrumentRepository
 
 
 class InstrumentRepository(IInstrumentRepository):
-    def add(self, name: str, ticker: str) -> None:
-        tool, created = Tool.objects.get_or_create(name=name, defaults={'ticker': ticker})
+    def add(self, name: str, ticker: str) -> bool:
+        tool, created = Tool.objects.get_or_create(ticker=ticker, defaults={'name': name})
         if created:
             Balance.objects.bulk_create(
                 [Balance(user_id=user, tool_id=tool.id, amount=0) for user in User.objects.values_list('id', flat=True)]
             )
+            return True
+        return False
 
     def delete(self, ticker: str) -> int:
         number, _ = Tool.objects.filter(ticker=ticker).delete()

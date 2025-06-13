@@ -12,7 +12,11 @@ def get_inst_router(inst_handlers: InstrumentHandlers) -> Router:
 
     @router.post(
         '/admin/instrument',
-        response={HTTPStatus.OK: SuccessResponse, HTTPStatus.FORBIDDEN: ErrorResponse},
+        response={
+            HTTPStatus.OK: SuccessResponse,
+            HTTPStatus.FORBIDDEN: ErrorResponse,
+            HTTPStatus.UNPROCESSABLE_ENTITY: ValidationErrorResponse
+        },
         summary='Add Instrument',
     )
     def add(request, inst_data: Instrument = Body(...)):

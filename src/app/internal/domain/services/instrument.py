@@ -6,11 +6,12 @@ class InstrumentService:
     def __init__(self, inst_repo: IInstrumentRepository) -> None:
         self.inst_repo = inst_repo
 
-    def add(self, inst_data: Instrument, user_role: str) -> bool:
+    def add(self, inst_data: Instrument, user_role: str) -> bool | None:
         if user_role == 'ADMIN':
-            self.inst_repo.add(name=inst_data.name, ticker=inst_data.ticker)
-            return True
-        return False
+            if self.inst_repo.add(name=inst_data.name, ticker=inst_data.ticker):
+                return True
+            return False
+        return None
 
     def delete(self, ticker: str, user_role: str) -> bool | None:
         if user_role == 'ADMIN':

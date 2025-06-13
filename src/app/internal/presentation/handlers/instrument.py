@@ -16,8 +16,12 @@ class InstrumentHandlers:
 
     def add(self, request, inst_data: Instrument = Body(...)):
         is_success = self.inst_service.add(inst_data, request.user_role)
-        if not is_success:
+        if is_success is None:
             return HTTPStatus.FORBIDDEN, ErrorResponse(detail='You are not admin user')
+        if not is_success:
+            return HTTPStatus.UNPROCESSABLE_ENTITY, ValidationErrorResponse(
+                detail=[ErrorDetail(loc=['body', 0], msg='Invalid value', type='value_error')]
+            )
         return HTTPStatus.OK, SuccessResponse
 
     def delete(self, request, ticker: str = Path(...)):
