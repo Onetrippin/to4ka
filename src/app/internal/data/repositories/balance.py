@@ -15,3 +15,6 @@ class BalanceRepository(IBalanceRepository):
 
     def make_withdraw(self, user_id: str, ticker: str, amount: int) -> None:
         Balance.objects.filter(user_id=user_id, tool__ticker=ticker).update(amount=F('amount') - amount)
+
+    def get_balance_by_ticker(self, user_id: UUID, ticker: str = 'RUB') -> int:
+        return Balance.objects.filter(user_id=user_id, tool__ticker=ticker).values_list('amount', flat=True).first()

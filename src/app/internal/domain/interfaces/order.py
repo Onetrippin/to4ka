@@ -34,9 +34,11 @@ class IOrderRepository(ABC):
             user_id: UUID,
             order_data: MarketOrderListBody,
             status: str,
-            filled: int = 0,
-            closed_at: Optional[datetime] = None,
     ) -> Order:
+        ...
+
+    @abstractmethod
+    def execute_market_order(self, trades_info: dict) -> None:
         ...
 
     @abstractmethod
