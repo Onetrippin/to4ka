@@ -40,9 +40,9 @@ lint:
 	$(DOCKER_COMPOSE) run --rm $(WORKDIR) $(SERVICE) black --config pyproject.toml .
 
 check_lint:
-	$(EXEC) isort --check --diff .
-	$(EXEC) flake8 --config setup.cfg
-	$(EXEC) black --check --config pyproject.toml .
+	$(DOCKER_COMPOSE) run --rm $(SERVICE) isort --check --diff .
+	$(DOCKER_COMPOSE) run --rm $(SERVICE) flake8 --config setup.cfg
+	$(DOCKER_COMPOSE) run --rm $(SERVICE) black --check --config pyproject.toml .
 
 build:
 	$(DOCKER_COMPOSE) build
