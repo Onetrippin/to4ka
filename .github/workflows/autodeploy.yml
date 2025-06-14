@@ -57,6 +57,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          clean: true
       - name: Copy .env file
         run: echo "${{ secrets.DOT_ENV }}" > .env
       - name: Run lint
@@ -70,6 +72,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          clean: true
       - name: Copy .env file
         run: echo "${{ secrets.DOT_ENV }}" > .env
       - name: Run lint
@@ -83,6 +87,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          clean: true
       - name: Copy .env file
         run: echo "${{ secrets.DOT_ENV }}" > .env
       - name: Run tests
@@ -97,6 +103,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          clean: true
       - name: Copy .env file
         run: echo "${{ secrets.DOT_ENV }}" > .env
       - name: Run tests
