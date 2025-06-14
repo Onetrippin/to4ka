@@ -92,7 +92,13 @@ class OrderService:
         else:
             total_price = 0
             remaining_qty = order_data.qty
-            trades_info = {'user_id': user_id, 'direction': order_data.direction, 'trades': []}
+            trades_info = {
+                'user_id': user_id,
+                'direction': order_data.direction,
+                'quantity': order_data.qty,
+                'price': None,
+                'trades': []
+            }
             for opp in opposite_orders:
                 available_qty = opp['quantity'] - opp['filled']
                 trade_qty = min(remaining_qty, available_qty)
@@ -141,7 +147,13 @@ class OrderService:
         )
         total_price = 0
         remaining_qty = order_data.qty
-        trades_info = {'user_id': user_id, 'direction': order_data.direction, 'trades': []}
+        trades_info = {
+            'user_id': user_id,
+            'direction': order_data.direction,
+            'quantity': order_data.qty,
+            'price': order_data.price,
+            'trades': []
+        }
         for opp in opposite_orders:
             available_qty = opp['quantity'] - opp['filled']
             trade_qty = min(remaining_qty, available_qty)
@@ -163,7 +175,7 @@ class OrderService:
 
         if (
             order_data.direction == 'BUY'
-            and (not total_price or self.balance_repo.get_balance_by_ticker(user_id) < total_price)
+            and self.balance_repo.get_balance_by_ticker(user_id) < order_data.qty * order_data.price
             or order_data.direction == 'SELL'
             and self.balance_repo.get_balance_by_ticker(user_id, order_data.ticker) < order_data.qty
         ):
@@ -199,6 +211,6 @@ class OrderService:
                 f'total_price: {total_price}, remaining_qty: {remaining_qty}'
             )
             order_id = self.order_repo.execute_limit_order(
-                trades_info, order_data, 'PARTIALLY_EXECUTED', order_data.qty
+                trades_info, order_data, 'PARTIALLY_EXECUTED', order_data.qty - remaining_qty
             )
         return order_id, text

@@ -166,6 +166,7 @@ class OrderRepository(IOrderRepository):
     ) -> UUID | None:
         with transaction.atomic():
             if trades_info['trades']:
+                print(trades_info['user_id'], order_data, status, filled)
                 order_id = self.create_limit_order(
                     trades_info['user_id'], order_data, status, filled, timezone.now() if status == 'EXECUTED' else None
                 )
@@ -237,8 +238,10 @@ class OrderRepository(IOrderRepository):
         deltas = {}
         net_rub_change = 0
         net_tool_change = 0
+        quantities = 0
         for trade in trades_info['trades']:
             cost = trade['quantity'] * trade['price']
+            quantities += trade['quantity']
             if trades_info['direction'] == 'BUY':
                 deltas.setdefault((trade['user_id'], rub_tool_id), [0, 0])[0] += cost
                 deltas.setdefault((trade['user_id'], trade['tool_id']), [0, 0])[1] -= trade['quantity']
@@ -250,10 +253,18 @@ class OrderRepository(IOrderRepository):
                 net_rub_change += cost
                 net_tool_change -= trade['quantity']
         if net_rub_change != 0:
+            if net_rub_change < 0 and quantities < trades_info['quantity']:
+                diff = trades_info['quantity'] - quantities
+                deltas.setdefault((trades_info['user_id'], rub_tool_id), [0, 0])[1] += diff * trades_info['price']
             deltas.setdefault((trades_info['user_id'], rub_tool_id), [0, 0])[0] += net_rub_change
         if net_tool_change != 0:
             tool_id = trades_info['trades'][0]['tool_id']
-            deltas.setdefault((trades_info['user_id'], tool_id), [0, 0])[0] += net_tool_change
+            if net_tool_change < 0 and quantities < trades_info['quantity']:
+                reserved_tool = trades_info['quantity'] + net_tool_change
+                deltas.setdefault((trades_info['user_id'], tool_id), [0, 0])[0] -= trades_info['quantity']
+                deltas.setdefault((trades_info['user_id'], tool_id), [0, 0])[1] += reserved_tool
+            else:
+                deltas.setdefault((trades_info['user_id'], tool_id), [0, 0])[0] += net_tool_change
         q_objects = Q()
         for (uid, tid) in deltas:
             q_objects |= Q(user_id=uid, tool_id=tid)
