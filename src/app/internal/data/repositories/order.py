@@ -166,7 +166,6 @@ class OrderRepository(IOrderRepository):
     ) -> UUID | None:
         with transaction.atomic():
             if trades_info['trades']:
-                print(trades_info['user_id'], order_data, status, filled)
                 order_id = self.create_limit_order(
                     trades_info['user_id'], order_data, status, filled, timezone.now() if status == 'EXECUTED' else None
                 )

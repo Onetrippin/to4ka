@@ -142,15 +142,9 @@ class OrderService:
                     order_data=order_data,
                     status='CANCELLED',
                 )
-                balance = (
-                    self.balance_repo.get_balance_by_ticker(user_id)
-                    if order_data.direction == 'BUY'
-                    else self.balance_repo.get_balance_by_ticker(user_id, order_data.ticker)
-                )
                 text = (
                     f'2) opposites: {opposite_orders}, user_id: {user_id}, order_data: {order_data}, '
                     f'total_price: {total_price}, remaining_qty: {remaining_qty}'
-                    f'balance: {balance}'
                 )
                 return None, text
             text = (
@@ -202,15 +196,9 @@ class OrderService:
                 order_data=order_data,
                 status='CANCELLED',
             )
-            balance = (
-                self.balance_repo.get_balance_by_ticker(user_id)
-                if order_data.direction == 'BUY'
-                else self.balance_repo.get_balance_by_ticker(user_id, order_data.ticker)
-            )
             text = (
                 f'4) opposites: {opposite_orders}, user_id: {user_id}, order_data: {order_data}, '
                 f'total_price: {total_price}, remaining_qty: {remaining_qty} '
-                f'balance: {balance}'
             )
             return None, text
         elif remaining_qty == order_data.qty:
