@@ -50,37 +50,41 @@ class OrderRepository(IOrderRepository):
         )
 
     def cancel_order(self, user_id: UUID, order_id: UUID) -> bool:
-        updated_order = Order.objects.filter(
-            user_id=user_id, id=order_id, status__in=['NEW', 'PARTIALLY_EXECUTED']
-        ).update(
-            status='CANCELLED',
-            closed_at=timezone.now(),
-        )
-        try:
-            ticker, qty, filled, direction, price = (
-                Order.objects.filter(id=order_id)
-                .values_list(
-                    'tool__ticker',
-                    'quantity',
-                    'filled',
-                    'direction',
-                    'price',
+        with transaction.atomic():
+            updated_order = (
+                Order.objects.filter(user_id=user_id, id=order_id, status__in=['NEW', 'PARTIALLY_EXECUTED'])
+                .select_for_update()
+                .update(
+                    status='CANCELLED',
+                    closed_at=timezone.now(),
                 )
-                .first()
             )
-            remaining_reserved = qty - filled
-        except TypeError:
-            return False
+            try:
+                ticker, qty, filled, direction, price = (
+                    Order.objects.filter(id=order_id)
+                    .select_for_update()
+                    .values_list(
+                        'tool__ticker',
+                        'quantity',
+                        'filled',
+                        'direction',
+                        'price',
+                    )
+                    .first()
+                )
+                remaining_reserved = qty - filled
+            except TypeError:
+                return False
 
-        if updated_order:
-            if direction == 'BUY':
-                ticker = 'RUB'
-                remaining_reserved = remaining_reserved * price
-            Balance.objects.filter(user_id=user_id, tool__ticker=ticker).update(
-                amount=F('amount') + remaining_reserved, reserved_amount=F('reserved_amount') - remaining_reserved
-            )
-            return True
-        return False
+            if updated_order:
+                if direction == 'BUY':
+                    ticker = 'RUB'
+                    remaining_reserved = remaining_reserved * price
+                Balance.objects.filter(user_id=user_id, tool__ticker=ticker).select_for_update().update(
+                    amount=F('amount') + remaining_reserved, reserved_amount=F('reserved_amount') - remaining_reserved
+                )
+                return True
+            return False
 
     def get_levels_info(self, ticker: str, limit: int) -> tuple:
         statuses = ['NEW', 'PARTIALLY_EXECUTED']
@@ -104,7 +108,8 @@ class OrderRepository(IOrderRepository):
         self, direction: Literal['BUY', 'SELL'], ticker: str, user_id: UUID
     ) -> List[Dict[str, Any]]:
         return list(
-            Order.objects.filter(
+            Order.objects.select_for_update()
+            .filter(
                 tool__ticker=ticker,
                 direction='SELL' if direction == 'BUY' else 'BUY',
                 status__in=['NEW', 'PARTIALLY_EXECUTED'],
@@ -119,7 +124,8 @@ class OrderRepository(IOrderRepository):
         self, direction: Literal['BUY', 'SELL'], ticker: str, price: int, user_id: UUID
     ) -> List[Dict[str, Any]]:
         return list(
-            Order.objects.filter(
+            Order.objects.select_for_update()
+            .filter(
                 tool__ticker=ticker,
                 direction='SELL' if direction == 'BUY' else 'BUY',
                 status__in=['NEW', 'PARTIALLY_EXECUTED'],
@@ -166,7 +172,6 @@ class OrderRepository(IOrderRepository):
     ) -> UUID | None:
         with transaction.atomic():
             if trades_info['trades']:
-                print(trades_info['user_id'], order_data, status, filled)
                 order_id = self.create_limit_order(
                     trades_info['user_id'], order_data, status, filled, timezone.now() if status == 'EXECUTED' else None
                 )
@@ -184,7 +189,7 @@ class OrderRepository(IOrderRepository):
                 else:
                     ticker = order_data.ticker
                     amount = order_data.qty
-                Balance.objects.filter(user_id=trades_info['user_id'], tool__ticker=ticker).update(
+                Balance.objects.filter(user_id=trades_info['user_id'], tool__ticker=ticker).select_for_update().update(
                     amount=F('amount') - amount, reserved_amount=F('reserved_amount') + amount
                 )
                 order_id = self.create_limit_order(trades_info['user_id'], order_data, 'NEW', closed_at=None)
@@ -205,7 +210,11 @@ class OrderRepository(IOrderRepository):
                     'closed_at': timezone.now() if status == 'EXECUTED' else None,
                 }
             )
-        orders = list(Order.objects.filter(id__in=[trade['match_order_id'] for trade in trades_info['trades']]))
+        orders = list(
+            Order.objects.filter(
+                id__in=[trade['match_order_id'] for trade in trades_info['trades']]
+            ).select_for_update()
+        )
         order_map = {order.id: order for order in orders}
         for order_info in orders_info:
             order = order_map.get(order_info['order_id'])
@@ -268,7 +277,7 @@ class OrderRepository(IOrderRepository):
         q_objects = Q()
         for (uid, tid) in deltas:
             q_objects |= Q(user_id=uid, tool_id=tid)
-        balances = list(Balance.objects.filter(q_objects))
+        balances = list(Balance.objects.select_for_update().filter(q_objects))
         balance_map = {(b.user_id, b.tool_id): b for b in balances}
         existing_balances = []
         new_balances = []
