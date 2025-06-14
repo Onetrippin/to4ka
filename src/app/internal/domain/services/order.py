@@ -2,8 +2,6 @@ from collections import defaultdict
 from typing import List
 from uuid import UUID
 
-from django.db import transaction
-
 from app.internal.domain.entities.order import (
     Level,
     LimitOrderListBody,
@@ -92,88 +90,27 @@ class OrderService:
         ]
 
     def create_market_order(self, user_id: UUID, order_data: MarketOrderListBody) -> tuple[UUID | None, str]:
-        with transaction.atomic():
-            opposite_orders = self.order_repo.get_opposite_limit_orders_for_market(
-                order_data.direction,
-                order_data.ticker,
-                user_id,
+        opposite_orders = self.order_repo.get_opposite_limit_orders_for_market(
+            order_data.direction,
+            order_data.ticker,
+            user_id,
+        )
+        if sum([opp['quantity'] for opp in opposite_orders]) < order_data.qty:
+            self.order_repo.create_market_order(
+                user_id=user_id,
+                order_data=order_data,
+                status='CANCELLED',
             )
-            if sum([opp['quantity'] for opp in opposite_orders]) < order_data.qty:
-                self.order_repo.create_market_order(
-                    user_id=user_id,
-                    order_data=order_data,
-                    status='CANCELLED',
-                )
-                text = f'1) opposites: {opposite_orders}, user_id: {user_id}, order_data: {order_data}'
-                return None, text
-            else:
-                total_price = 0
-                remaining_qty = order_data.qty
-                trades_info = {
-                    'user_id': user_id,
-                    'direction': order_data.direction,
-                    'quantity': order_data.qty,
-                    'price': None,
-                    'trades': [],
-                }
-                for opp in opposite_orders:
-                    available_qty = opp['quantity'] - opp['filled']
-                    trade_qty = min(remaining_qty, available_qty)
-                    trades_info['trades'].append(
-                        {
-                            'match_order_id': opp['id'],
-                            'tool_id': opp['tool_id'],
-                            'user_id': opp['user_id'],
-                            'price': opp['price'],
-                            'quantity': trade_qty,
-                            'init_quantity': opp['quantity'],
-                            'init_filled': opp['filled'],
-                        }
-                    )
-                    total_price += trade_qty * opp['price']
-                    remaining_qty -= trade_qty
-                    if remaining_qty <= 0:
-                        break
-                if (
-                    order_data.direction == 'BUY'
-                    and (not total_price or self.balance_repo.get_balance_by_ticker(user_id) < total_price)
-                    or order_data.direction == 'SELL'
-                    and self.balance_repo.get_balance_by_ticker(user_id, order_data.ticker) < order_data.qty
-                ):
-                    self.order_repo.create_market_order(
-                        user_id=user_id,
-                        order_data=order_data,
-                        status='CANCELLED',
-                    )
-                    balance = (
-                        self.balance_repo.get_balance_by_ticker(user_id)
-                        if order_data.direction == 'BUY'
-                        else self.balance_repo.get_balance_by_ticker(user_id, order_data.ticker)
-                    )
-                    text = (
-                        f'2) opposites: {opposite_orders}, user_id: {user_id}, order_data: {order_data}, '
-                        f'total_price: {total_price}, remaining_qty: {remaining_qty}'
-                        f'balance: {balance}'
-                    )
-                    return None, text
-                text = (
-                    f'3) opposites: {opposite_orders}, user_id: {user_id}, order_data: {order_data}, '
-                    f'total_price: {total_price}, remaining_qty: {remaining_qty}'
-                )
-                return self.order_repo.execute_market_order(trades_info, order_data), text
-
-    def create_limit_order(self, user_id: UUID, order_data: LimitOrderListBody) -> tuple[UUID | None, str]:
-        with transaction.atomic():
-            opposite_orders = self.order_repo.get_opposite_limit_orders_for_limit(
-                order_data.direction, order_data.ticker, order_data.price, user_id
-            )
+            text = f'1) opposites: {opposite_orders}, user_id: {user_id}, order_data: {order_data}'
+            return None, text
+        else:
             total_price = 0
             remaining_qty = order_data.qty
             trades_info = {
                 'user_id': user_id,
                 'direction': order_data.direction,
                 'quantity': order_data.qty,
-                'price': order_data.price,
+                'price': None,
                 'trades': [],
             }
             for opp in opposite_orders:
@@ -194,14 +131,13 @@ class OrderService:
                 remaining_qty -= trade_qty
                 if remaining_qty <= 0:
                     break
-
             if (
                 order_data.direction == 'BUY'
-                and self.balance_repo.get_balance_by_ticker(user_id) < order_data.qty * order_data.price
+                and (not total_price or self.balance_repo.get_balance_by_ticker(user_id) < total_price)
                 or order_data.direction == 'SELL'
                 and self.balance_repo.get_balance_by_ticker(user_id, order_data.ticker) < order_data.qty
             ):
-                self.order_repo.create_limit_order(
+                self.order_repo.create_market_order(
                     user_id=user_id,
                     order_data=order_data,
                     status='CANCELLED',
@@ -212,31 +148,91 @@ class OrderService:
                     else self.balance_repo.get_balance_by_ticker(user_id, order_data.ticker)
                 )
                 text = (
-                    f'4) opposites: {opposite_orders}, user_id: {user_id}, order_data: {order_data}, '
-                    f'total_price: {total_price}, remaining_qty: {remaining_qty} '
+                    f'2) opposites: {opposite_orders}, user_id: {user_id}, order_data: {order_data}, '
+                    f'total_price: {total_price}, remaining_qty: {remaining_qty}'
                     f'balance: {balance}'
                 )
                 return None, text
-            elif remaining_qty == order_data.qty:
-                text = (
-                    f'5) opposites: {opposite_orders}, user_id: {user_id}, order_data: {order_data}, '
-                    f'total_price: {total_price}, remaining_qty: {remaining_qty}'
-                )
-                order_id = self.order_repo.execute_limit_order(trades_info, order_data)
-            elif remaining_qty <= 0:
-                text = (
-                    f'6) opposites: {opposite_orders}, user_id: {user_id}, order_data: {order_data}, '
-                    f'total_price: {total_price}, remaining_qty: {remaining_qty}'
-                )
-                order_id = self.order_repo.execute_limit_order(
-                    trades_info, order_data, 'EXECUTED', order_data.qty - remaining_qty
-                )
-            else:
-                text = (
-                    f'7) opposites: {opposite_orders}, user_id: {user_id}, order_data: {order_data}, '
-                    f'total_price: {total_price}, remaining_qty: {remaining_qty}'
-                )
-                order_id = self.order_repo.execute_limit_order(
-                    trades_info, order_data, 'PARTIALLY_EXECUTED', order_data.qty - remaining_qty
-                )
-            return order_id, text
+            text = (
+                f'3) opposites: {opposite_orders}, user_id: {user_id}, order_data: {order_data}, '
+                f'total_price: {total_price}, remaining_qty: {remaining_qty}'
+            )
+            return self.order_repo.execute_market_order(trades_info, order_data), text
+
+    def create_limit_order(self, user_id: UUID, order_data: LimitOrderListBody) -> tuple[UUID | None, str]:
+        opposite_orders = self.order_repo.get_opposite_limit_orders_for_limit(
+            order_data.direction, order_data.ticker, order_data.price, user_id
+        )
+        total_price = 0
+        remaining_qty = order_data.qty
+        trades_info = {
+            'user_id': user_id,
+            'direction': order_data.direction,
+            'quantity': order_data.qty,
+            'price': order_data.price,
+            'trades': [],
+        }
+        for opp in opposite_orders:
+            available_qty = opp['quantity'] - opp['filled']
+            trade_qty = min(remaining_qty, available_qty)
+            trades_info['trades'].append(
+                {
+                    'match_order_id': opp['id'],
+                    'tool_id': opp['tool_id'],
+                    'user_id': opp['user_id'],
+                    'price': opp['price'],
+                    'quantity': trade_qty,
+                    'init_quantity': opp['quantity'],
+                    'init_filled': opp['filled'],
+                }
+            )
+            total_price += trade_qty * opp['price']
+            remaining_qty -= trade_qty
+            if remaining_qty <= 0:
+                break
+
+        if (
+            order_data.direction == 'BUY'
+            and self.balance_repo.get_balance_by_ticker(user_id) < order_data.qty * order_data.price
+            or order_data.direction == 'SELL'
+            and self.balance_repo.get_balance_by_ticker(user_id, order_data.ticker) < order_data.qty
+        ):
+            self.order_repo.create_limit_order(
+                user_id=user_id,
+                order_data=order_data,
+                status='CANCELLED',
+            )
+            balance = (
+                self.balance_repo.get_balance_by_ticker(user_id)
+                if order_data.direction == 'BUY'
+                else self.balance_repo.get_balance_by_ticker(user_id, order_data.ticker)
+            )
+            text = (
+                f'4) opposites: {opposite_orders}, user_id: {user_id}, order_data: {order_data}, '
+                f'total_price: {total_price}, remaining_qty: {remaining_qty} '
+                f'balance: {balance}'
+            )
+            return None, text
+        elif remaining_qty == order_data.qty:
+            text = (
+                f'5) opposites: {opposite_orders}, user_id: {user_id}, order_data: {order_data}, '
+                f'total_price: {total_price}, remaining_qty: {remaining_qty}'
+            )
+            order_id = self.order_repo.execute_limit_order(trades_info, order_data)
+        elif remaining_qty <= 0:
+            text = (
+                f'6) opposites: {opposite_orders}, user_id: {user_id}, order_data: {order_data}, '
+                f'total_price: {total_price}, remaining_qty: {remaining_qty}'
+            )
+            order_id = self.order_repo.execute_limit_order(
+                trades_info, order_data, 'EXECUTED', order_data.qty - remaining_qty
+            )
+        else:
+            text = (
+                f'7) opposites: {opposite_orders}, user_id: {user_id}, order_data: {order_data}, '
+                f'total_price: {total_price}, remaining_qty: {remaining_qty}'
+            )
+            order_id = self.order_repo.execute_limit_order(
+                trades_info, order_data, 'PARTIALLY_EXECUTED', order_data.qty - remaining_qty
+            )
+        return order_id, text

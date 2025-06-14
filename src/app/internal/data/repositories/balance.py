@@ -21,9 +21,4 @@ class BalanceRepository(IBalanceRepository):
         return False
 
     def get_balance_by_ticker(self, user_id: UUID, ticker: str = 'RUB') -> int:
-        return (
-            Balance.objects.select_for_update()
-            .filter(user_id=user_id, tool__ticker=ticker)
-            .values_list('amount', flat=True)
-            .first()
-        )
+        return Balance.objects.filter(user_id=user_id, tool__ticker=ticker).values_list('amount', flat=True).first()
