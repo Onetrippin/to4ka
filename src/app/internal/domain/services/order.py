@@ -1,3 +1,4 @@
+from collections import defaultdict
 from typing import List
 from uuid import UUID
 
@@ -60,11 +61,24 @@ class OrderService:
     def cancel_order(self, user_id: UUID, order_id: UUID) -> bool:
         return self.order_repo.cancel_order(user_id, order_id)
 
+    def _aggregate_levels(self, orders: list[dict], reverse: bool = False) -> list[Level]:
+        grouped = defaultdict(int)
+        for order in orders:
+            price = order['price']
+            qty = order['quantity'] - order['filled']
+            if qty > 0:
+                grouped[price] += qty
+        sorted_levels = sorted(grouped.items(), key=lambda x: x[0], reverse=reverse)
+        return [Level(price=price, qty=qty) for price, qty in sorted_levels]
+
     def get_orderbook(self, ticker: str, limit: int) -> OrderBook:
         bids, asks = self.order_repo.get_levels_info(ticker, limit)
+        bid_levels = self._aggregate_levels(bids, reverse=True)
+        ask_levels = self._aggregate_levels(asks, reverse=False)
+
         return OrderBook(
-            bid_levels=[Level(price=bid['price'], qty=bid['quantity'] - bid['filled']) for bid in bids],
-            ask_levels=[Level(price=ask['price'], qty=ask['quantity'] - ask['filled']) for ask in asks],
+            bid_levels=bid_levels[:limit],
+            ask_levels=ask_levels[:limit],
         )
 
     def get_trans_history(self, ticker: str, limit: int) -> list[Transaction]:
