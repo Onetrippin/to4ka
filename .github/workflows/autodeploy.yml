@@ -103,6 +103,7 @@ jobs:
           echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/.vault_pass
           chmod 600 /tmp/.vault_pass
           
+          ANSIBLE_CONFIG=ansible/ansible.cfg \
           ~/.local/bin/ansible-playbook \
             -i ansible/inventory/${{ github.ref_name == 'main' && 'prod' || 'test' }}.ini \
             ansible/playbooks/deploy.yml \
