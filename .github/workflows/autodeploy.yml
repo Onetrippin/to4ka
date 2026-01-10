@@ -100,7 +100,7 @@ jobs:
 
       - name: Deploy with Ansible
         run: |
-          ansible-playbook \
+          ~/.local/bin/ansible-playbook \
             -i ansible/inventory/${{ github.ref_name == 'main' && 'prod' || 'test' }}.ini \
             ansible/playbooks/deploy.yml \
             --extra-vars "image=${IMAGE_APP}" \
