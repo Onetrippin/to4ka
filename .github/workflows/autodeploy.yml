@@ -40,20 +40,23 @@ jobs:
     runs-on: self-hosted
     needs: build
     environment: ${{ github.ref_name == 'main' && 'prod' || 'test' }}
-    env:
-      IMAGE_APP: ${{ vars.IMAGE_APP }}:${{ github.ref_name == 'main' && 'prod' || 'test' }}-${{ github.run_number }}
-      APP_PORT: 8000
-      POSTGRES_USER: onetrippin
-      POSTGRES_DB: tochka_db
-      NGINX_PORT: 8081
-      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
 
     steps:
       - uses: actions/checkout@v4
         with:
           clean: true
+      - name: Create .env for CI
+        run: |
+          cat <<EOF > .env
+          APP_PORT=8000
+          IMAGE_APP=${{ vars.IMAGE_APP }}:${{ github.ref_name == 'main' && 'prod' || 'test' }}-${{ github.run_number }}
+          POSTGRES_USER=onetrippin
+          POSTGRES_DB=tochka_db
+          NGINX_PORT=8081
+          TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }}
+          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+          EOF
 
       - name: Run lint
         run: make check_lint
@@ -62,15 +65,6 @@ jobs:
     runs-on: self-hosted
     needs: lint
     environment: ${{ github.ref_name == 'main' && 'prod' || 'test' }}
-    env:
-      IMAGE_APP: ${{ vars.IMAGE_APP }}:${{ github.ref_name == 'main' && 'prod' || 'test' }}-${{ github.run_number }}
-      APP_PORT: 8000
-      POSTGRES_USER: onetrippin
-      POSTGRES_DB: tochka_db
-      NGINX_PORT: 8081
-      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
 
     steps:
       - uses: actions/checkout@v4
