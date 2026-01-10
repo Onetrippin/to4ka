@@ -90,8 +90,7 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GHCR_USERNAME: ${{ github.repository_owner }}
       IMAGE_APP: ${{ vars.IMAGE_APP }}:${{ github.ref_name == 'main' && 'prod' || 'test' }}-${{ github.run_number }}
-      PROD_SERVER_IP: ${{ secrets.PROD_SERVER_IP }}
-      TEST_SERVER_IP: ${{ secrets.TEST_SERVER_IP }}
+      SERVER_IP: ${{ secrets.SERVER_IP }}
       SERVER_PORT: ${{ secrets.SERVER_PORT }}
 
     steps:
