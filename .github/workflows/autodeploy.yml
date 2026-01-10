@@ -92,6 +92,7 @@ jobs:
       IMAGE_APP: ${{ vars.IMAGE_APP }}:${{ github.ref_name == 'main' && 'prod' || 'test' }}-${{ github.run_number }}
       SERVER_IP: ${{ secrets.SERVER_IP }}
       SERVER_PORT: ${{ secrets.SERVER_PORT }}
+      ANSIBLE_VAULT_PASSWORD: ${{ secrets.ANSIBLE_VAULT_PASSWORD }}
 
     steps:
       - uses: actions/checkout@v4
@@ -102,8 +103,6 @@ jobs:
 
       - name: Deploy with Ansible
         run: |
-          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/.vault_pass
-          
           cd ansible
           
           ANSIBLE_CONFIG=ansible.cfg \
@@ -111,6 +110,4 @@ jobs:
             -i inventory/${{ github.ref_name == 'main' && 'prod' || 'test' }}.yml \
             playbooks/deploy.yml \
             --extra-vars "image=${IMAGE_APP}" \
-            --vault-password-file /tmp/.vault_pass -vvv
-          
-          rm -f /tmp/.vault_pass
+            --vault-id @env:ANSIBLE_VAULT_PASSWORD -vvv
