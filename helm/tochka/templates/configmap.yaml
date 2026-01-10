@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "tochka.fullname" . }}-config
+data:
+  DJANGO_SETTINGS_MODULE: config.settings
+  DEBUG: "{{ .Values.app.debug }}"
+  ALLOWED_HOSTS: "*"
+  CSRF_TRUSTED_ORIGINS: "http://localhost"
+  APP_PORT: "{{ .Values.app.port }}"
+  BASE_NAME: "{{ .Values.app.baseName }}"
+  BASE_TICKER: "{{ .Values.app.baseTicker }}"
+  POSTGRES_HOST: "{{ .Values.postgresql.host.postgresql }}"
+  POSTGRES_PORT: "{{ .Values.postgresql.primary.service.ports.postgresql }}"
+  POSTGRES_DB: "{{ .Values.postgresql.auth.database }}"
+  POSTGRES_USER: "{{ .Values.postgresql.auth.username }}"

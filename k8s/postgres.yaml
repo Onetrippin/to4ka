@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: tochka-postgresql
+  namespace: tochka
+spec:
+  ports:
+    - port: 5432
+  selector:
+    app: tochka-postgresql
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: tochka-postgresql
+  namespace: tochka
+spec:
+  serviceName: tochka-postgresql
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tochka-postgresql
+  template:
+    metadata:
+      labels:
+        app: tochka-postgresql
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:17-alpine
+          env:
+            - name: POSTGRES_USER
+              value: onetrippin
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: tochka-secrets
+                  key: postgresPassword
+            - name: POSTGRES_DB
+              value: tochka_db
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: pgdata
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: pgdata
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi

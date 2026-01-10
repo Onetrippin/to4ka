@@ -1,0 +1,34 @@
+- name: Ensure app directory exists
+  file:
+    path: /opt/to4ka
+    state: directory
+    mode: '0755'
+
+- name: Copy docker-compose.yml
+  copy:
+    src: ../../docker-compose.yml
+    dest: /opt/to4ka/docker-compose.yml
+    mode: '0644'
+
+- name: Create .env on server
+  template:
+    src: env.j2
+    dest: /opt/to4ka/.env
+    mode: '0600'
+
+- name: Login to GHCR
+  docker_login:
+    registry_url: ghcr.io
+    username: "{{ lookup('env', 'GHCR_USERNAME') }}"
+    password: "{{ lookup('env', 'GITHUB_TOKEN') }}"
+
+- name: Pull all images
+  community.docker.docker_compose:
+    project_src: /opt/to4ka
+    pull: yes
+
+- name: Bring up full docker-compose stack
+  community.docker.docker_compose:
+    project_src: /opt/to4ka
+    state: present
+    restarted: yes

@@ -1,0 +1,14 @@
+Tochka Django приложение успешно развернуто 🚀
+
+1. Доступ через Ingress:
+   http://{{ .Values.ingress.hostname }}/
+
+2. Проверка через port-forward:
+   kubectl port-forward deploy/{{ include "tochka.fullname" . }} {{ .Values.app.port }}:{{ .Values.app.port }}
+
+3. Проверить статус:
+   kubectl get pods
+   kubectl logs deploy/{{ include "tochka.fullname" . }}
+
+4. Проверить миграции:
+   kubectl logs deploy/{{ include "tochka.fullname" . }} -c migrate

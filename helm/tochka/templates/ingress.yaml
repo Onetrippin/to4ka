@@ -1,0 +1,22 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "tochka.fullname" . }}
+  annotations:
+    {{- range $k, $v := .Values.ingress.annotations }}
+    {{ $k }}: "{{ $v }}"
+    {{- end }}
+spec:
+  rules:
+    - host: {{ .Values.ingress.hostname }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "tochka.fullname" . }}
+                port:
+                  number: {{ .Values.service.port }}
+{{- end }}

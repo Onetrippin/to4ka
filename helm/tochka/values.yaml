@@ -1,0 +1,48 @@
+replicaCount: 1
+
+image:
+  repository: onetrippin/tochka-app
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8000
+
+ingress:
+  enabled: true
+  hostname: tochka.local
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    traefik.ingress.kubernetes.io/router.entrypoints: web
+  tls: false
+
+app:
+  port: 8000
+  debug: true
+  baseName: RUBLES
+  baseTicker: RUB
+
+secrets:
+  fernetKey: ""
+
+postgresql:
+  auth:
+    username: onetrippin
+    database: tochka_db
+    password: ""
+  host:
+    postgresql: tochka-postgresql
+  primary:
+    service:
+      ports:
+        postgresql: 5432
+  persistence:
+    enabled: true
+    size: 2Gi
+    storageClass: local-path
+
+resources: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}

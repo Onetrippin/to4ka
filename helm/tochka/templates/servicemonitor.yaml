@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "tochka.fullname" . }}
+  namespace: monitoring
+  labels:
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: {{ include "tochka.name" . }}
+  namespaceSelector:
+    matchNames:
+      - tochka
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s

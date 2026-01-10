@@ -1,0 +1,179 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: tochka-tochka
+  namespace: tochka
+spec:
+  selector:
+    app: tochka-tochka
+  ports:
+    - port: 8000
+      targetPort: 8000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tochka-tochka
+  namespace: tochka
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tochka-tochka
+  template:
+    metadata:
+      labels:
+        app: tochka-tochka
+    spec:
+      initContainers:
+        - name: wait-for-postgres
+          image: postgres:17-alpine
+          env:
+            - name: POSTGRES_HOST
+              value: "tochka-postgresql"
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: POSTGRES_USER
+              value: "onetrippin"
+          command:
+            - sh
+            - -c
+            - |
+              until pg_isready -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER; do
+                echo "Waiting for Postgres..."
+                sleep 2
+              done
+        - name: create-db
+          image: postgres:17-alpine
+          env:
+            - name: POSTGRES_HOST
+              value: "tochka-postgresql"
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: POSTGRES_USER
+              value: "onetrippin"
+            - name: POSTGRES_DB
+              value: "tochka_db"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: tochka-secrets
+                  key: postgresPassword
+          command:
+            - sh
+            - -c
+            - |
+              PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_HOST -U $POSTGRES_USER -d postgres -tc "SELECT 1 FROM pg_database WHERE datname='$POSTGRES_DB'" | grep -q 1 || \
+              PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_HOST -U $POSTGRES_USER -d postgres -c "CREATE DATABASE \"$POSTGRES_DB\""
+        - name: migrate
+          image: onetrippin/tochka-app:latest
+          command: ["sh", "-c", "python manage.py migrate"]
+          env:
+            - name: BASE_NAME
+              value: "RUBLES"
+            - name: BASE_TICKER
+              value: "RUB"
+            - name: DEBUG
+              value: "true"
+            - name: ALLOWED_HOSTS
+              value: "*"
+            - name: CSRF_TRUSTED_ORIGINS
+              value: "http://localhost"
+            - name: POSTGRES_DB
+              value: "tochka_db"
+            - name: POSTGRES_USER
+              value: "onetrippin"
+            - name: POSTGRES_HOST
+              value: "tochka-postgresql"
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: DJANGO_SETTINGS_MODULE
+              value: config.settings
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: tochka-secrets
+                  key: postgresPassword
+            - name: DJANGO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: tochka-secrets
+                  key: fernetKey
+            - name: FERNET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: tochka-secrets
+                  key: fernetKey
+            - name: TELEGRAM_BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: tochka-secrets
+                  key: telegramBotToken
+            - name: TELEGRAM_CHAT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: tochka-secrets
+                  key: telegramChatId
+      containers:
+        - name: django
+          image: onetrippin/tochka-app:latest
+          env:
+            - name: BASE_NAME
+              value: "RUBLES"
+            - name: BASE_TICKER
+              value: "RUB"
+            - name: DEBUG
+              value: "true"
+            - name: ALLOWED_HOSTS
+              value: "*"
+            - name: CSRF_TRUSTED_ORIGINS
+              value: "http://localhost"
+            - name: POSTGRES_DB
+              value: "tochka_db"
+            - name: POSTGRES_USER
+              value: "onetrippin"
+            - name: POSTGRES_HOST
+              value: "tochka-postgresql"
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: DJANGO_SETTINGS_MODULE
+              value: config.settings
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: tochka-secrets
+                  key: postgresPassword
+            - name: FERNET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: tochka-secrets
+                  key: fernetKey
+            - name: DJANGO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: tochka-secrets
+                  key: fernetKey
+            - name: TELEGRAM_BOT_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: tochka-secrets
+                  key: telegramBotToken
+            - name: TELEGRAM_CHAT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: tochka-secrets
+                  key: telegramChatId
+          command:
+            - gunicorn
+            - config.wsgi:application
+            - --bind=0.0.0.0:8000
+            - --workers=3
+            - --timeout=30
+          ports:
+            - containerPort: 8000
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10

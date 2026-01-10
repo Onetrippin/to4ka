@@ -1,0 +1,15 @@
+apiVersion: v2
+name: tochka
+description: Django application with PostgreSQL
+type: application
+version: 0.1.0
+appVersion: "1.0"
+
+maintainers:
+  - name: Nikolai Antipin
+    email: kolimpiadnik@gmail.com
+
+dependencies:
+  - name: postgresql
+    version: 18.2.0
+    repository: "https://charts.bitnami.com/bitnami"

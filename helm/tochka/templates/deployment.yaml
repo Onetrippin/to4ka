@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "tochka.fullname" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ include "tochka.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "tochka.name" . }}
+    spec:
+      initContainers:
+        - name: wait-for-postgres
+          image: postgres:17-alpine
+          command:
+            - sh
+            - -c
+            - |
+              until pg_isready -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER; do
+                echo "Waiting for Postgres..."
+                sleep 2
+              done
+          envFrom:
+            - secretRef:
+                name: {{ include "tochka.fullname" . }}-secret
+            - configMapRef:
+                name: {{ include "tochka.fullname" . }}-config
+
+        - name: migrate
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          command: ["sh", "-c", "python manage.py migrate"]
+          envFrom:
+            - secretRef:
+                name: {{ include "tochka.fullname" . }}-secret
+            - configMapRef:
+                name: {{ include "tochka.fullname" . }}-config
+
+      containers:
+        - name: django
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.app.port }}
+          command:
+            - gunicorn
+            - config.wsgi:application
+            - --bind=0.0.0.0:{{ .Values.app.port }}
+            - --workers=3
+            - --timeout=30
+          envFrom:
+            - secretRef:
+                name: {{ include "tochka.fullname" . }}-secret
+            - configMapRef:
+                name: {{ include "tochka.fullname" . }}-config

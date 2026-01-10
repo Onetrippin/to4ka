@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: monitoring
+spec:
+  selector:
+    app: grafana
+  ports:
+    - port: 3000
+      targetPort: 3000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+        - name: grafana
+          image: grafana/grafana:latest
+          env:
+            - name: GF_SECURITY_ADMIN_USER
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-admin
+                  key: admin-user
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: grafana-admin
+                  key: admin-password
+          ports:
+            - containerPort: 3000
+          volumeMounts:
+            - name: dashboards
+              mountPath: /var/lib/grafana/provisioning/dashboards
+              readOnly: true
+            - name: dashboards-provisioning
+              mountPath: /etc/grafana/provisioning/dashboards
+              readOnly: true
+            - name: grafana-datasources
+              mountPath: /etc/grafana/provisioning/datasources
+              readOnly: true
+      volumes:
+        - name: dashboards
+          configMap:
+            name: tochka-grafana-dashboards
+        - name: dashboards-provisioning
+          configMap:
+            name: grafana-dashboards-provisioning
+        - name: grafana-datasources
+          configMap:
+            name: grafana-datasources

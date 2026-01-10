@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "tochka.fullname" . }}
+  namespace: tochka
+  labels:
+    app: {{ include "tochka.name" . }}
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    app: {{ include "tochka.name" . }}
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: {{ .Values.app.port }}
+      protocol: TCP

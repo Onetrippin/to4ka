@@ -4,8 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile
     command: >
-      bash -c "cd src &&
-      gunicorn config.wsgi:application
+      bash -c "gunicorn config.wsgi:application
       --bind 0.0.0.0:${APP_PORT}
       --workers 3
       --worker-class gthread
@@ -16,8 +15,8 @@ services:
     ports:
       - "127.0.0.1:8001:${APP_PORT}"
     volumes:
-      - .:/src
-      - static_volume:/app/src/static/
+      - ./src/app/migrations:/app/app/migrations
+      - static_volume:/app/static/
     environment:
       - DJANGO_SETTINGS_MODULE=config.settings
     env_file:
@@ -26,6 +25,9 @@ services:
       db:
         condition: service_healthy
     restart: unless-stopped
+    networks:
+      - default
+      - monitoring
 
   db:
     image: postgres:17.5-alpine3.20
@@ -41,19 +43,200 @@ services:
       retries: 5
       start_period: 30s
       timeout: 10s
+    networks:
+      - default
+      - monitoring
 
   nginx:
-    build: ./nginx
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
     container_name: tochka-nginx
     ports:
       - "127.0.0.1:${NGINX_PORT}:80"
     volumes:
-      - static_volume:/app/src/static/
+      - static_volume:/app/static/
     depends_on:
       - app
     command: [ "nginx", "-g", "daemon off;" ]
     restart: unless-stopped
+    networks:
+      - default
+      - monitoring
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: tochka-prometheus
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/alerts.yml:/etc/prometheus/alerts.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - monitoring
+    depends_on:
+      alertmanager:
+        condition: service_healthy
+      cadvisor:
+        condition: service_healthy
+      node-exporter:
+        condition: service_healthy
+      postgres-exporter:
+        condition: service_healthy
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: tochka-grafana
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+    env_file:
+      - .env
+    restart: unless-stopped
+    depends_on:
+      prometheus:
+        condition: service_healthy
+      cadvisor:
+        condition: service_healthy
+      alertmanager:
+        condition: service_healthy
+      node-exporter:
+        condition: service_healthy
+      postgres-exporter:
+        condition: service_healthy
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:latest
+    container_name: tochka-cadvisor
+    privileged: true
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /etc/machine-id:/etc/machine-id:ro
+    restart: unless-stopped
+    networks:
+      - monitoring
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:8080/metrics" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: tochka-node-exporter
+    ports:
+      - "127.0.0.1:9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+      - /var/lib/node_exporter:/var/lib/node_exporter:textfile
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+      - '--collector.textfile.directory=/var/lib/node_exporter'
+    restart: unless-stopped
+    networks:
+      - monitoring
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:9100/metrics" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  docker-stats-cron:
+    image: alpine:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/node_exporter:/var/lib/node_exporter
+      - ./monitoring:/scripts
+    entrypoint: |
+      sh -c "
+      apk add busybox-static docker-cli &&
+      echo '*/1 * * * * /scripts/docker-stats.sh' > /etc/crontabs/root &&
+      crond -f -l 8 -c /etc/crontabs"
+    restart: unless-stopped
+    networks:
+      - monitoring
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    container_name: tochka-postgres-exporter
+    ports:
+      - "127.0.0.1:9187:9187"
+    environment:
+      - DATA_SOURCE_NAME=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?sslmode=disable
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - monitoring
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:9187/metrics" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  alertmanager:
+    build:
+      context: ./monitoring
+      dockerfile: Dockerfile-alertmanager
+    container_name: tochka-alertmanager
+    volumes:
+      - ./monitoring/alertmanager.yml.template:/etc/alertmanager/alertmanager.yml.template
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+    ports:
+      - "127.0.0.1:9093:9093"
+    networks:
+      - monitoring
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:9093" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
   pg_data:
   static_volume:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  default:
+    driver: bridge
+  monitoring:
+    driver: bridge

@@ -10,6 +10,7 @@ psycopg2 = '~=2.9'
 gunicorn = '~=23.0'
 django-ninja = '~=1.4'
 cryptography = '~=44.0'
+django-prometheus = '~=2.3'
 
 [dev-packages]
 Black = '~=22.3'

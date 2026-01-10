@@ -1,0 +1,10 @@
+- name: Deploy application
+  hosts: all
+  become: true
+
+  vars:
+    app_dir: /opt/to4ka
+    container_name: to4ka
+
+  roles:
+    - app

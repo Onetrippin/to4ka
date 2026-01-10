@@ -1,0 +1,17 @@
+alertmanager:
+  alertmanagerSpec:
+    secrets:
+      - alertmanager-telegram
+
+  config:
+    global:
+      resolve_timeout: 5m
+
+    route:
+      receiver: telegram
+
+    receivers:
+      - name: telegram
+        telegram_configs:
+          - bot_token_file: /etc/alertmanager/secrets/alertmanager-telegram/bot_token
+            chat_id_file: /etc/alertmanager/secrets/alertmanager-telegram/chat_id
