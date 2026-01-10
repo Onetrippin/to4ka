@@ -112,6 +112,6 @@ jobs:
             -i inventory/${{ github.ref_name == 'main' && 'prod' || 'test' }}.yml \
             playbooks/deploy.yml \
             --extra-vars "image=${IMAGE_APP}" \
-            --vault-password-file /tmp/.vault_pass
+            --vault-password-file /tmp/.vault_pass -vvv
           
           rm -f /tmp/.vault_pass
