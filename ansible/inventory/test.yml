@@ -1,6 +1,3 @@
 test:
   hosts:
     app:
-      ansible_host: "{{ lookup('env', 'TEST_SERVER_IP') }}"
-      ansible_port: "{{ lookup('env', 'SERVER_PORT') }}"
-      ansible_user: deploy
