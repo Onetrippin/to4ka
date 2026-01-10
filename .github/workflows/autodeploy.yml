@@ -103,7 +103,6 @@ jobs:
       - name: Deploy with Ansible
         run: |
           echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/.vault_pass
-          chmod 600 /tmp/.vault_pass
           
           cd ansible
           
