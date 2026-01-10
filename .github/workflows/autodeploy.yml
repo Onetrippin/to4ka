@@ -7,14 +7,12 @@ on:
     branches: [main, dev]
   workflow_dispatch:
 
-env:
-  ENVIRONMENT: ${{ github.ref_name == 'main' && 'prod' || 'test' }}
-  IMAGE_APP: ${{ vars.IMAGE_APP }}:${{ github.ref_name == 'main' && 'prod' || 'test' }}-${{ github.run_number }}
-
 jobs:
   build:
     runs-on: self-hosted
-    environment: ${{ env.ENVIRONMENT }}
+    environment: ${{ github.ref_name == 'main' && 'prod' || 'test' }}
+    env:
+      IMAGE_APP: ${{ vars.IMAGE_APP }}:${{ github.ref_name == 'main' && 'prod' || 'test' }}-${{ github.run_number }}
 
     steps:
       - uses: actions/checkout@v4
@@ -26,15 +24,15 @@ jobs:
         run: make build push
 
       - name: Tag latest (prod only)
-        if: env.ENVIRONMENT == 'prod'
+        if: ${{ github.ref_name == 'main' }}
         run: |
           docker tag $IMAGE_APP ${{ vars.IMAGE_APP }}:latest
           docker push ${{ vars.IMAGE_APP }}:latest
 
   lint:
     runs-on: self-hosted
-    environment: ${{ env.ENVIRONMENT }}
     needs: build
+    environment: ${{ github.ref_name == 'main' && 'prod' || 'test' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -46,8 +44,8 @@ jobs:
 
   test:
     runs-on: self-hosted
-    environment: ${{ env.ENVIRONMENT }}
     needs: lint
+    environment: ${{ github.ref_name == 'main' && 'prod' || 'test' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -61,8 +59,8 @@ jobs:
   deploy:
     if: github.event_name == 'workflow_dispatch'
     runs-on: self-hosted
-    environment: ${{ env.ENVIRONMENT }}
     needs: test
+    environment: ${{ github.ref_name == 'main' && 'prod' || 'test' }}
 
     permissions:
       contents: read
@@ -72,6 +70,7 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GHCR_USERNAME: ${{ github.repository_owner }}
+      IMAGE_APP: ${{ vars.IMAGE_APP }}:${{ github.ref_name == 'main' && 'prod' || 'test' }}-${{ github.run_number }}
 
     steps:
       - uses: actions/checkout@v4
@@ -83,7 +82,7 @@ jobs:
       - name: Deploy with Ansible
         run: |
           ansible-playbook \
-            -i ansible/inventory/${{ env.ENVIRONMENT }}.ini \
+            -i ansible/inventory/${{ github.ref_name == 'main' && 'prod' || 'test' }}.ini \
             ansible/playbooks/deploy.yml \
             --extra-vars "image=${IMAGE_APP}" \
             --vault-password-file <(echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}")
