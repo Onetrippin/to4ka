@@ -1,4 +1,4 @@
-all:
+prod:
   hosts:
     app:
       ansible_host: "{{ lookup('env', 'PROD_SERVER_IP') }}"
