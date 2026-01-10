@@ -100,8 +100,13 @@ jobs:
 
       - name: Deploy with Ansible
         run: |
+          echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > /tmp/.vault_pass
+          chmod 600 /tmp/.vault_pass
+          
           ~/.local/bin/ansible-playbook \
             -i ansible/inventory/${{ github.ref_name == 'main' && 'prod' || 'test' }}.ini \
             ansible/playbooks/deploy.yml \
             --extra-vars "image=${IMAGE_APP}" \
-            --vault-password-file <(echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}")
+            --vault-password-file /tmp/.vault_pass
+          
+          rm -f /tmp/.vault_pass
