@@ -90,6 +90,9 @@ jobs:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       GHCR_USERNAME: ${{ github.repository_owner }}
       IMAGE_APP: ${{ vars.IMAGE_APP }}:${{ github.ref_name == 'main' && 'prod' || 'test' }}-${{ github.run_number }}
+      PROD_SERVER_IP: ${{ secrets.PROD_SERVER_IP }}
+      TEST_SERVER_IP: ${{ secrets.TEST_SERVER_IP }}
+      SERVER_PORT: ${{ secrets.SERVER_PORT }}
 
     steps:
       - uses: actions/checkout@v4
@@ -107,7 +110,7 @@ jobs:
           
           ANSIBLE_CONFIG=ansible.cfg \
           ~/.local/bin/ansible-playbook \
-            -i inventory/${{ github.ref_name == 'main' && 'prod' || 'test' }}.ini \
+            -i inventory/${{ github.ref_name == 'main' && 'prod' || 'test' }}.yml \
             playbooks/deploy.yml \
             --extra-vars "image=${IMAGE_APP}" \
             --vault-password-file /tmp/.vault_pass
