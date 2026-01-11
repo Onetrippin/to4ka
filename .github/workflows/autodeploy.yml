@@ -98,7 +98,7 @@ jobs:
 
       - name: Install Ansible & deps
         run: |
-          pip3 install --user ansible==2.13.13 docker
+          pip3 install --user ansible docker
 
       - name: Install Ansible collections
         run: |
