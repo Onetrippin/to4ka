@@ -1,6 +1,5 @@
 - name: Deploy application
   hosts: prod
-  become: true
 
   vars:
     app_dir: /opt/to4ka

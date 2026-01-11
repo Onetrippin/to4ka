@@ -1,12 +1,9 @@
-- name: Show group names
-  debug:
-    var: group_names
-
 - name: Create .env on server
   template:
     src: env.j2
     dest: /opt/to4ka/.env
     mode: '0600'
+  become: true
 
 - name: Login to GHCR
   docker_login:
@@ -18,9 +15,11 @@
   community.docker.docker_compose:
     project_src: /opt/to4ka
     pull: yes
+  become: true
 
 - name: Bring up full docker-compose stack
   community.docker.docker_compose:
     project_src: /opt/to4ka
     state: present
     restarted: yes
+  become: true
