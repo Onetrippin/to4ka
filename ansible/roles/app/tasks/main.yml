@@ -17,12 +17,12 @@
     password: "{{ lookup('env', 'GITHUB_TOKEN') }}"
 
 - name: Pull all images
-  community.docker.docker_compose:
+  community.docker.docker_compose_v2:
     project_src: /opt/to4ka
     pull: yes
 
 - name: Bring up full docker-compose stack
-  community.docker.docker_compose:
+  community.docker.docker_compose_v2:
     project_src: /opt/to4ka
     state: present
     restarted: yes
