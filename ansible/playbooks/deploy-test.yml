@@ -1,9 +1,13 @@
 - name: Deploy application
   hosts: test
+  become: true
 
   vars:
     app_dir: /opt/to4ka
     container_name: to4ka
+
+  vars_files:
+    - "../host_vars/app/vars.yml"
 
   roles:
     - app
