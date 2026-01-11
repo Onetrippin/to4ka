@@ -1,12 +1,6 @@
-- name: Create .env on server (TEST)
-  template:
-    src: env.j2.test
-    dest: /opt/to4ka/.env
-    mode: '0600'
-
 - name: Create .env on server
-  template:
-    src: env.j2
+  ansible.builtin.template:
+    src: roles/app/templates/env.j2
     dest: /opt/to4ka/.env
     mode: '0600'
 
