@@ -1,6 +1,6 @@
 - name: Create .env on server
   ansible.builtin.template:
-    src: app/templates/env.j2
+    src: env.j2
     dest: /opt/to4ka/.env
     mode: '0600'
 
