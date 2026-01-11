@@ -1,3 +1,9 @@
+- name: Create .env on server (TEST)
+  template:
+    src: env.j2.test
+    dest: /opt/to4ka/.env
+    mode: '0600'
+
 - name: Create .env on server
   template:
     src: env.j2
@@ -14,11 +20,9 @@
   community.docker.docker_compose:
     project_src: /opt/to4ka
     pull: yes
-  become: true
 
 - name: Bring up full docker-compose stack
   community.docker.docker_compose:
     project_src: /opt/to4ka
     state: present
     restarted: yes
-  become: true
