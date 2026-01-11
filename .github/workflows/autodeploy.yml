@@ -109,7 +109,7 @@ jobs:
           ANSIBLE_CONFIG=ansible.cfg \
           ~/.local/bin/ansible-playbook \
             -i inventory/${{ github.ref_name == 'main' && 'prod' || 'test' }}.yml \
-            playbooks/deploy.yml \
+            playbooks/deploy-${{ github.ref_name == 'main' && 'prod' || 'test' }}.yml \
             --extra-vars "image=${IMAGE_APP}" \
             --vault-password-file /tmp/.vault_pass -vvv
           

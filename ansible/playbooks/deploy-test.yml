@@ -1,5 +1,5 @@
 - name: Deploy application
-  hosts: all
+  hosts: test
   become: true
 
   vars:
