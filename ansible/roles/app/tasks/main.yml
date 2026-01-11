@@ -1,3 +1,7 @@
+- name: Show group names
+  debug:
+    var: group_names
+
 - name: Create .env on server
   template:
     src: env.j2
