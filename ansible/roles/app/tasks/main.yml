@@ -1,13 +1,17 @@
-- name: Install Ansible collections
-  run: |
-    cd ansible
-    ansible-galaxy collection install -r requirements.yml
-
-- name: Install python docker deps
+---
+- name: Ensure docker-compose plugin is installed
   apt:
-    name: python3-docker
+    name: docker-compose-plugin
     state: present
     update_cache: yes
+
+- name: Create application directory
+  file:
+    path: /opt/to4ka
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
 
 - name: Create .env on server
   ansible.builtin.template:
@@ -16,7 +20,7 @@
     mode: '0600'
 
 - name: Login to GHCR
-  docker_login:
+  community.docker.docker_login:
     registry_url: ghcr.io
     username: "{{ lookup('env', 'GHCR_USERNAME') }}"
     password: "{{ lookup('env', 'GITHUB_TOKEN') }}"
@@ -24,10 +28,10 @@
 - name: Pull all images
   community.docker.docker_compose_v2:
     project_src: /opt/to4ka
-    pull: yes
+    pull: true
 
 - name: Bring up full docker-compose stack
   community.docker.docker_compose_v2:
     project_src: /opt/to4ka
     state: present
-    restarted: yes
+    restarted: true

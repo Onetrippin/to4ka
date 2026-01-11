@@ -96,9 +96,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Ansible deps
+      - name: Install Ansible & deps
         run: |
-          pip3 install --user ansible docker
+          pip3 install --user ansible==2.13.13 docker
+
+      - name: Install Ansible collections
+        run: |
+          cd ansible
+          ~/.local/bin/ansible-galaxy collection install -r requirements.yml
 
       - name: Deploy with Ansible
         run: |
