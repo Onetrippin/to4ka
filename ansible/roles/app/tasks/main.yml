@@ -3,7 +3,6 @@
     src: env.j2
     dest: /opt/to4ka/.env
     mode: '0600'
-  become: true
 
 - name: Login to GHCR
   docker_login:
