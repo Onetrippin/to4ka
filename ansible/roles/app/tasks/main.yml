@@ -1,4 +1,3 @@
----
 - name: Ensure docker-compose plugin is installed
   apt:
     name: docker-compose-plugin
@@ -28,7 +27,7 @@
 - name: Pull all images
   community.docker.docker_compose_v2:
     project_src: /opt/to4ka
-    pull: true
+    pull: always
 
 - name: Bring up full docker-compose stack
   community.docker.docker_compose_v2:
