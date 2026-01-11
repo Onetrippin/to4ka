@@ -33,4 +33,7 @@
   community.docker.docker_compose_v2:
     project_src: /opt/to4ka
     state: present
-    restarted: true
+    pull: policy
+    build: policy
+    recreate: auto
+    dependencies: true
