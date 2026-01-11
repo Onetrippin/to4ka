@@ -10,16 +10,16 @@ else
 endif
 
 migrate:
-	$(DOCKER_COMPOSE) run --rm $(SERVICE) python3 src/manage.py migrate $(if $m, api $m,)
+	$(DOCKER_COMPOSE) run --rm $(SERVICE) python3 manage.py migrate $(if $m, api $m,)
 
 makemigrations:
-	$(DOCKER_COMPOSE) run --rm $(SERVICE) python3 src/manage.py makemigrations
+	$(DOCKER_COMPOSE) run --rm $(SERVICE) python3 manage.py makemigrations
 
 createsuperuser:
-	$(DOCKER_COMPOSE) exec $(SERVICE) python3 src/manage.py createsuperuser
+	$(DOCKER_COMPOSE) exec $(SERVICE) python3 manage.py createsuperuser
 
 collectstatic:
-	$(DOCKER_COMPOSE) run --rm $(SERVICE) python3 src/manage.py collectstatic --noinput
+	$(DOCKER_COMPOSE) exec $(SERVICE) python3 manage.py collectstatic --noinput
 
 command:
 	$(EXEC) ${c}
